@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout version="0.2">
+	<title xml:lang="ko">Rain 레이아웃</title>
+	<description xml:lang="ko">
+		Rain 레이아웃
+	</description>
+	<version>1.0.0</version>
+	<date>2025-03-01</date>
+	<link>http://studio02.co.kr</link>
+
+	<author email_address="studio02xe@gmail.com" link="http://studio02.co.kr">
+		<name xml:lang="ko">studio02</name>
+	</author>
+
+	<extra_vars>
+		<group>
+			<title xml:lang="ko">1. 사이트 기본 정보</title> 
+			 <var name="site_name" type="text">
+				<title xml:lang="ko">사이트 이름</title>
+				<description xml:lang="ko">웹사이트 이름을 입력합니다.</description>
+			</var>
+			<var name="site_url" type="text">
+				<title xml:lang="ko">사이트 주소</title>
+				<description xml:lang="ko">홈 화면에 해당하는 사이트 주소를 입력합니다.</description>
+			</var>
+			<var name="site_logo" type="image">
+				<title xml:lang="ko">로고 이미지</title>
+				<description xml:lang="ko">실제 출력 될 크기의 2배 사이즈로 제작해서 업로드 해주세요.</description>
+			</var>
+			<var name="site_logoD" type="image">
+				<title xml:lang="ko">로고 이미지 - 다크모드</title>
+				<description xml:lang="ko">실제 출력 될 크기의 2배 사이즈로 제작해서 업로드 해주세요.</description>
+			</var>
+			<var name="use_search" type="select">
+				<title xml:lang="ko">통합 검색</title>
+				<description xml:lang="ko">통합검색이 되지 않을 경우 설치된 모듈 - 통합검색에서 설정을 완료해주세요.</description>
+				<options value="">
+					<title xml:lang="ko">사용</title>
+				</options>
+				<options value="N">
+					<title xml:lang="ko">사용 안 함</title>
+				</options>
+			</var>
+			<var name="icon_font" type="select">
+				<title xml:lang="ko">폰트어썸 아이콘 폰트</title>
+				<description xml:lang="ko">메뉴 등에 아이콘 폰트를 넣고 싶을 때 사용 합니다.</description>
+				<options value="">
+					<title xml:lang="ko">사용 안 함</title>
+				</options>
+				<options value="Y">
+					<title xml:lang="ko">사용</title>
+				</options>
+			</var>
+		</group>
+		<group>
+			<title xml:lang="ko">2. 레이아웃 디자인</title>
+			<var name="main_font" type="select">
+				<title xml:lang="ko">메인 폰트</title>
+				<options value="">
+					<title xml:lang="ko">넥슨 v2 고딕</title>
+				</options>
+				<options value="nr">
+					<title xml:lang="ko">나눔 스퀘어 라운드</title>
+				</options>
+				<options value="s">
+					<title xml:lang="ko">시스템 폰트</title>
+				</options>
+			</var>
+			<var name="layout_type" type="select">
+				<title xml:lang="ko">레이아웃 타입</title>
+				<options value="">
+					<title xml:lang="ko">Rain</title>
+				</options>
+				<options value="N">
+					<title xml:lang="ko">Rain News</title>
+				</options>
+			</var>
+			<var name="color_star" type="colorpicker">
+				<title xml:lang="ko">└ 별 색상 (레이아웃 타입 - Rain News)</title>
+			</var>
+			<var name="sidebar_type" type="select">
+				<title xml:lang="ko">사이드바 타입</title>
+				<options value="">
+					<title xml:lang="ko">사용 안 함</title>
+				</options>
+				<options value="L">
+					<title xml:lang="ko">왼쪽 사이드바</title>
+				</options>
+			</var>
+			<var name="darkmode" type="select">
+				<title xml:lang="ko">다크 모드</title>
+				<options value="">
+					<title xml:lang="ko">사용</title>
+				</options>
+				<options value="Y">
+					<title xml:lang="ko">사용(다크 모드 기본)</title>
+				</options>
+				<options value="N">
+					<title xml:lang="ko">사용 안 함</title>
+				</options>
+			</var>
+			<var name="light_content" type="select">
+				<title xml:lang="ko">└ 다크모드 본문 영역</title>
+				<options value="">
+					<title xml:lang="ko">어둡게</title>
+				</options>
+				<options value="Y">
+					<title xml:lang="ko">밝게</title>
+				</options>
+			</var>
+			<var name="layout_width" type="text">
+				<title xml:lang="ko">레이아웃 가로 길이</title>
+				<description xml:lang="ko">숫자만 입력</description>
+			</var>
+			<var name="sidebar_width" type="text">
+				<title xml:lang="ko">사이드바 가로 길이</title>
+				<description xml:lang="ko">숫자만 입력</description>
+			</var>
+		</group>
+		<group>
+			<title xml:lang="ko">3. 사용자 코드</title>
+			<var name="code_header_bottom" type="textarea">
+				<title xml:lang="ko">헤더 밑 (PC)</title>
+			</var>
+			<var name="code_header_bottomM" type="textarea">
+				<title xml:lang="ko">헤더 밑 (모바일)</title>
+			</var>
+			<var name="code_sidebar" type="textarea">
+				<title xml:lang="ko">사이드바 (PC)</title>
+			</var>
+			<var name="code_footer" type="textarea">
+				<title xml:lang="ko">푸터</title>
+			</var>
+		</group>
+	</extra_vars>
+
+	<menus>
+		<menu name="gnb" maxdepth="2" default="true">
+			<title xml:lang="ko">메뉴</title>
+			<title xml:lang="en">menu</title>
+		</menu>
+		<menu name="mobile_menu" maxdepth="2" default="true">
+			<title xml:lang="ko">모바일 사이드바 메뉴</title>
+			<title xml:lang="en">mobile sidebar menu</title>
+		</menu>
+		<menu name="footer_menu" maxdepth="1">
+			<title xml:lang="ko">푸터 메뉴</title>
+			<title xml:lang="en">footer menu</title>
+		</menu>
+	</menus>
+	
+</layout>
