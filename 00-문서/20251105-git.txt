@@ -4,7 +4,6 @@ rhymix_git
 https://chatgpt.com/c/690ad400-e4d0-8328-b53c-592db4d2449d
 
 
-
 cd \nginx\php7
 start php-cgi.exe -b 127.0.0.1:9000
 
@@ -16,3 +15,6 @@ nginx.exe -s reload
 nginx.exe -s stop
 # 또는 안전 종료:
 # nginx.exe -s quit
+
+맥에서 커밋 테스트
+
