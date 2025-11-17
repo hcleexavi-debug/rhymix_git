@@ -12,4 +12,4 @@ mysql
     infaith / *2025
     bssd / *2025
     jidesign / ?
-
+이 계저정보 지워야 함
