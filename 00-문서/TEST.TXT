@@ -1,4 +1,4 @@
 TEST
 mac
 
-macair 에서 커밋
+2025-11-17 window
