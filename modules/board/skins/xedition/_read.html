@@ -23,7 +23,16 @@
 		</p>
 	</div>
 	<!-- /READ HEADER -->
-	
+	<!-- Extra Output -->
+	<div class="exOut" cond="$oDocument->isExtraVarsExists() && $oDocument->isAccessible()">
+		<table border="1" cellspacing="0" summary="Extra Form Output">
+			<tr loop="$oDocument->getExtraVars() => $key,$val" cond="$val->hasValue()">
+				<th scope="row">{$val->name}</th>
+				<td>{$val->getValueHTML()}&nbsp;</td>
+			</tr>
+		</table>
+	</div>
+	<!-- /Extra Output -->
 	<!-- READ BODY -->
 	<div class="read_body">
 		<!--@if(!$oDocument->isAccessible())-->
@@ -42,7 +51,6 @@
 	<!-- /READ BODY -->
 	<!-- READ FOOTER -->
 	<div class="read_footer">
-<?/* 2025-05-16, hclee, SNS 삭제
 		<div class="sns">
 		    <ul>
 		    <li>
@@ -73,7 +81,6 @@
 				});
 			</script>
 		</div>
-*/?>
 		<div class="vote">
 			<ul>
 				<li cond="$board_features->document->vote_up">
@@ -106,18 +113,6 @@
 			<img cond="$oDocument->getProfileImage()" src="{$oDocument->getProfileImage()}" alt="Profile" class="pf" />
 			<div cond="$oDocument->getSignature()" class="tx">{$oDocument->getSignature()}</div>
 		</div>
-
-		<!-- Extra Output -->
-		<div class="exOut" cond="$oDocument->isExtraVarsExists() && $oDocument->isAccessible()">
-			<table border="1" cellspacing="0" summary="Extra Form Output">
-				<tr loop="$oDocument->getExtraVars() => $key,$val" cond="$val->hasValue()">
-					<th scope="row">{$val->name}</th>
-					<td>{$val->getValueHTML()}&nbsp;</td>
-				</tr>
-			</table>
-		</div>
-		<!-- /Extra Output -->
-		 
 		<div class="btnArea">
 			<!--@if($board_features->document->vote_log)-->
 			<a class="btn" href="{getUrl('', 'mid', $mid, 'act', 'dispBoardVoteLog', 'target_srl', $oDocument->document_srl, 'target', 'document')}"><i class="xi-list-ul"></i>{$lang->cmd_document_vote_user}</a>

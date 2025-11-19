@@ -1,4 +1,4 @@
-{'<?xml version="1.0" encoding="UTF-8" ?>'}
+<?php echo '<?xml version="1.0" encoding="UTF-8" ?>'; ?>
 
 <config autoescape="on" />
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://purl.org/rss/1.0/">
@@ -28,7 +28,7 @@
 	<item loop="$document_list=>$oDocument" rdf:about="{$oDocument->getPermanentUrl()}">
 		<title>{$oDocument->getTitleText()}</title>
 		<link>{$oDocument->getPermanentUrl()}</link>
-		<description>{$oDocument->getSummary(400)|escape}</description>
+		<description>{$oDocument->getSummary(400)}</description>
 		<dc:creator>{$oDocument->getNickName()}</dc:creator>
 		<dc:date>{date('c', ztime($oDocument->get('regdate')))}</dc:date>
 	</item>

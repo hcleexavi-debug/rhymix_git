@@ -467,7 +467,7 @@ class FileHandler
 	{
 		$K64 = 65536;
 		$TWEAKFACTOR = 2.0;
-		$channels = $imageInfo['channels'];
+		$channels = $imageInfo['channels'] ?? 6;
 		if(!$channels)
 		{
 			$channels = 6; //for png
@@ -728,6 +728,10 @@ class FileHandler
 		}
 		elseif ($target_type === 'webp' && function_exists('imagewebp'))
 		{
+			if (!imageistruecolor($thumb))
+			{
+				imagepalettetotruecolor($thumb);
+			}
 			$output = imagewebp($thumb, $target_file);
 		}
 		else

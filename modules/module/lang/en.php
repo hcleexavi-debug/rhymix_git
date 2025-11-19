@@ -46,11 +46,12 @@ $lang->header_script = 'Header Script';
 $lang->about_header_script = 'You can input the html script between &lt;header&gt; and &lt;/header&gt; by yourself. You can use &lt;script&gt;, &lt;style&gt; or &lt;meta&gt; tags.';
 $lang->grant_access = 'Access';
 $lang->grant_manager = 'Management';
-$lang->grant_to_all = 'All users';
-$lang->grant_to_login_user = 'Login users';
+$lang->grant_to_all = 'Everyone';
+$lang->grant_to_login_user = 'Logged in users';
+$lang->grant_to_non_login_user = 'Logged out users';
 $lang->grant_to_site_user = 'Registered users';
 $lang->grant_to_admin = 'Administrator only';
-$lang->grant_to_group = 'Selected group users';
+$lang->grant_to_group = 'Selected group members';
 $lang->cmd_add_shortcut = 'Add Shortcut';
 $lang->cmd_install = 'Install';
 $lang->cmd_create_db_table = 'Create DB Table';
@@ -79,8 +80,7 @@ $lang->msg_extra_name_exists = 'Already registered field ID. Please input anothe
 $lang->about_browser_title = 'It will be shown in the browser title. It will be also used in a RSS/Trackback.';
 $lang->about_mid = 'The module name must begin with a Latin alphabet, and only consist of Latin alphabets, numerals, and underscores.';
 $lang->about_default = 'If checked, this module will be shown when users access the site without mid value (mid=NoValue).';
-$lang->about_module_category = 'It enables you to manage it through a module category.
- The URL for the module manager is <a href="./?module=admin&amp;act=dispModuleAdminCategory">Module category </a>.';
+$lang->about_module_category = 'Module categories can be edited in <a href="./?module=admin&amp;act=dispModuleAdminCategory" target="_blank">Module category</a>.';
 $lang->about_description = 'This description is only for a manager.';
 $lang->about_header_text = 'The contents will be shown on the top of the module. (html tags available)';
 $lang->about_footer_text = 'The contents will be shown on the bottom of the module. (html tags available)';
@@ -110,7 +110,7 @@ $lang->about_search_virtual_site = 'Enter domain of virtual sites. To search mod
 $lang->about_extra_vars_eid_value = 'This is the unique ID for this field.<br>You can use a combination of Latin alphabets, numbers and underscore(_), as long as it starts with an alphabet.';
 $lang->about_extra_vars_column_name = 'This is the name that is actually shown to users.';
 $lang->about_extra_vars_description = 'The description entered here will be shown next to the input field.';
-$lang->about_langcode = 'If you want to configure seperately, use \'find language code\'';
+$lang->about_langcode = 'If you want to configure separately, use \'find language code\'';
 $lang->about_file_extension = 'Only %s extension(s) is available.';
 $lang->fail_module_regist = 'Fail Regist Module';
 $lang->multilingual_desc = 'Rhymix supports 12 languages currently. If you want to use another language, translate one set of languages in /common/lang/ folder into that language and send it to us (devops@rhymix.org).';

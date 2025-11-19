@@ -100,9 +100,13 @@ class BoardView extends Board
 		{
 			foreach($extra_keys as $val)
 			{
-				$this->order_target[] = $val->eid;
+				if ($val->sort === 'Y')
+				{
+					$this->order_target[] = $val->eid;
+				}
 			}
 		}
+
 		/**
 		 * load javascript, JS filters
 		 */
@@ -852,60 +856,8 @@ class BoardView extends Board
 			return $this->dispBoardMessage($this->user->isMember() ? 'msg_not_permitted' : 'msg_not_logged');
 		}
 
-		/**
-		 * check if the category option is enabled not not
-		 */
-		if($this->module_info->use_category=='Y')
-		{
-			// get the user group information
-			if(Context::get('is_logged'))
-			{
-				$group_srls = array_keys($this->user->group_list);
-			}
-			else
-			{
-				$group_srls = array();
-			}
-			$group_srls_count = count($group_srls);
-
-			// check the grant after obtained the category list
-			$category_list = array();
-			$normal_category_list = DocumentModel::getCategoryList($this->module_srl);
-			if(count($normal_category_list))
-			{
-				foreach($normal_category_list as $category_srl => $category)
-				{
-					$is_granted = TRUE;
-					if(isset($category->group_srls) && $category->group_srls)
-					{
-						$category_group_srls = explode(',',$category->group_srls);
-						$is_granted = FALSE;
-						if(count(array_intersect($group_srls, $category_group_srls))) $is_granted = TRUE;
-
-					}
-					if($is_granted) $category_list[$category_srl] = $category;
-				}
-			}
-
-			// check if at least one category is granted
-			$grant_exists = false;
-			foreach ($category_list as $category)
-			{
-				if ($category->grant)
-				{
-					$grant_exists = true;
-				}
-			}
-			if ($grant_exists)
-			{
-				Context::set('category_list', $category_list);
-			}
-			else
-			{
-				$this->module_info->use_category = 'N';
-				Context::set('category_list', array());
-			}
-		}
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
 
 		// GET parameter document_srl from request
 		$document_srl = Context::get('document_srl');
@@ -913,11 +865,12 @@ class BoardView extends Board
 		$oDocument->setDocument($document_srl);
 
 		$savedDoc = ($oDocument->get('module_srl') == $oDocument->get('member_srl'));
+		$oDocument->add('origin_module_srl', $oDocument->get('module_srl'));
 		$oDocument->add('module_srl', $this->module_srl);
 
-		if($oDocument->isExists())
+		if ($oDocument->isExists())
 		{
-			if(($this->module_info->protect_document_regdate ?? 0) > 0 && $this->grant->manager == false)
+			if ($this->module_info->protect_document_regdate > 0 && $this->grant->manager == false)
 			{
 				if($oDocument->get('regdate') < date('YmdHis', strtotime('-'.$this->module_info->protect_document_regdate.' day')))
 				{
@@ -926,7 +879,7 @@ class BoardView extends Board
 					throw new Rhymix\Framework\Exception($massage);
 				}
 			}
-			if(($this->module_info->protect_content ?? 'N') === 'Y' || ($this->module_info->protect_update_content ?? 'N') == 'Y')
+			if ($this->module_info->protect_content === 'Y' || $this->module_info->protect_update_content === 'Y')
 			{
 				if($oDocument->get('comment_count') > 0 && $this->grant->manager == false)
 				{
@@ -934,7 +887,7 @@ class BoardView extends Board
 				}
 			}
 
-			if (($this->module_info->protect_admin_content_update ?? 'N') !== 'N')
+			if ($this->module_info->protect_admin_content_update === 'Y')
 			{
 				$member_info = MemberModel::getMemberInfo($oDocument->get('member_srl'));
 				if(isset($member_info->is_admin) && $member_info->is_admin == 'Y' && $this->user->is_admin != 'Y')
@@ -981,12 +934,70 @@ class BoardView extends Board
 				}
 			}
 		}
-		if(!$oDocument->get('status')) $oDocument->add('status', DocumentModel::getDefaultStatus());
 
 		$statusList = $this->_getStatusNameList();
-		if(count($statusList) > 0) Context::set('status_list', $statusList);
+		if (count($statusList) > 0)
+		{
+			Context::set('status_list', $statusList);
+		}
+		if (!$oDocument->get('status'))
+		{
+			$oDocument->add('status', DocumentModel::getDefaultStatus());
+		}
 
-		// get Document status config value
+		// Check category grants
+		if ($this->module_info->use_category === 'Y')
+		{
+			$category_list = array();
+			$normal_category_list = DocumentModel::getCategoryList($this->module_srl);
+			$group_srls = $this->user->group_list ?? [];
+			if(count($normal_category_list))
+			{
+				foreach ($normal_category_list as $category_srl => $category)
+				{
+					$is_granted = true;
+					if (isset($category->group_srls) && $category->group_srls)
+					{
+						$category_group_srls = explode(',', $category->group_srls);
+						$is_granted = false;
+						if (count(array_intersect($group_srls, $category_group_srls)))
+						{
+							$is_granted = true;
+						}
+					}
+					if ($oDocument->isExists() && $oDocument->get('category_srl') == $category_srl)
+					{
+						$category->grant = true;
+						$is_granted = true;
+					}
+					if ($is_granted)
+					{
+						$category_list[$category_srl] = $category;
+					}
+				}
+			}
+
+			// check if at least one category is granted
+			$grant_exists = false;
+			foreach ($category_list as $category)
+			{
+				if ($category->grant)
+				{
+					$grant_exists = true;
+				}
+			}
+			if ($grant_exists)
+			{
+				Context::set('category_list', $category_list);
+			}
+			else
+			{
+				$this->module_info->use_category = 'N';
+				Context::set('category_list', array());
+			}
+		}
+
+		// Set to Context
 		Context::set('document_srl',$document_srl);
 		Context::set('oDocument', $oDocument);
 
@@ -1079,6 +1090,9 @@ class BoardView extends Board
 				return $this->setTemplateFile('input_password_form');
 			}
 		}
+
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
 
 		if($this->module_info->protect_document_regdate > 0 && $this->grant->manager == false)
 		{
@@ -1274,6 +1288,9 @@ class BoardView extends Board
 			}
 		}
 
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
+
 		if($this->module_info->protect_comment_regdate > 0 && $this->grant->manager == false)
 		{
 			if($oComment->get('regdate') < date('YmdHis', strtotime('-'.$this->module_info->protect_document_regdate.' day')))
@@ -1357,6 +1374,9 @@ class BoardView extends Board
 				return $this->setTemplateFile('input_password_form');
 			}
 		}
+
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
 
 		if($this->module_info->protect_comment_regdate > 0 && $this->grant->manager == false)
 		{

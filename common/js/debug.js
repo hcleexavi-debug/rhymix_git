@@ -40,7 +40,7 @@ $(function() {
 	}));
 
 	// Define a function for adding debug data to the panel.
-	window.rhymix_debug_add_data = function(data, open) {
+	Rhymix.addDebugData = function(data, open) {
 
 		// Define loop variables.
 		var i, j, entry, num, cnt, backtrace, description;
@@ -148,7 +148,7 @@ $(function() {
 					if (data.queries[i].backtrace && data.queries[i].backtrace.length) {
 						backtrace = $('<ul></ul>').appendTo(description.find('li:first-child'));
 						for (j in data.queries[i].backtrace) {
-							if (data.queries[i].backtrace[j].file) {
+							if (j > 0 && data.queries[i].backtrace[j].file) {
 								backtrace.append($('<li></li>').text(data.queries[i].backtrace[j].file + ":" + data.queries[i].backtrace[j].line));
 							}
 						}
@@ -234,19 +234,20 @@ $(function() {
 		// If there are errors, turn the button text red.
 		if (data.errors && data.errors.length) {
 			button_link.addClass("has_errors");
+			page_header.find('h3').append($('<span class="error_count"></span>').text(data.errors.length));
 		}
 	};
 
 	// Add debug data from the current request.
-	if (window.rhymix_debug_content) {
-		window.rhymix_debug_content.page_title = 'MAIN PAGE';
-		rhymix_debug_add_data(window.rhymix_debug_content, true);
+	if (Rhymix.currentDebugData) {
+		Rhymix.currentDebugData.page_title = 'MAIN PAGE';
+		Rhymix.addDebugData(Rhymix.currentDebugData, true);
 	}
 
 	// Add debug data from pending AJAX requests.
-	if (window.rhymix_debug_pending_data) {
-		while (window.rhymix_debug_pending_data.length) {
-			rhymix_debug_add_data(window.rhymix_debug_pending_data.shift());
+	if (Rhymix.pendingDebugData) {
+		while (Rhymix.pendingDebugData.length) {
+			Rhymix.addDebugData(Rhymix.pendingDebugData.shift());
 		}
 	}
 });

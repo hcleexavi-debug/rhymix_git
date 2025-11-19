@@ -367,7 +367,17 @@ jQuery(function($){
 	$.fn.tableSpan = function(){
 		this.each(function(){
 			var $this = $(this);
-			var thNum = $this.find('>thead>tr:eq(0)>th').length;
+			var thList = $this.find('>thead>tr:eq(0)>th');
+			var thNum = 0;
+			thList.each(function(){
+				var $th = $(this);
+				if($th.attr('colspan')){ // th의 colspan 반영
+					thNum += parseInt($th.attr('colspan'), 10);
+				} else {
+					thNum++;
+				}
+			});
+
 			var $tdTarget = $this.find('>tbody>tr:eq(0)>td:only-child');
 			if(thNum != $tdTarget.attr('colspan')){
 				$tdTarget.attr('colspan', thNum).css('text-align','center');
@@ -977,7 +987,7 @@ jQuery(function($){
 			tmpCount++;
 
 			// add html
-			var $btn = $('<a class="x_btn moduleTrigger">' + xe.cmd_find + '</a>');
+			var $btn = $('<a class="x_btn moduleTrigger">' + xe.lang.cmd_find + '</a>');
 			var $displayInput = $('<input type="text" readonly>');
 			$this.after($btn).after('&nbsp;').after($displayInput).hide();
 			$btn.xeModuleSearch();
@@ -1050,10 +1060,10 @@ jQuery(function($){
 	$.xeMsgBox = {
 		htOptions : {}
 	};
-	//xe.cmd_cancel = "{$lang->cmd_cancel}";
-	//xe.cmd_confirm = "{$lang->cmd_confirm}";
+	//xe.lang.cmd_cancel = "{$lang->cmd_cancel}";
+	//xe.lang.cmd_confirm = "{$lang->cmd_confirm}";
 	var $msgBox = $.xeMsgBox.$msgBox = $("<section />").addClass("x_modal _common x").hide().css('z-index', 9999);
-	$msgBox.html('<button type="button" class="x_close _cancel">&times;</button> <div class="x_modal-header"> <h1 class="_title"></h1> </div> <div class="x_modal-body"> <div class="_text"></div> </div> <div class="x_modal-footer"> <button type="button" class="x_btn x_pull-left _cancel">'+xe.cmd_cancel+'</button> <button type="submit" class="x_btn x_btn-inverse x_pull-right x_btn-primary _ok">'+xe.cmd_confirm+'</button> </div> ');
+	$msgBox.html('<button type="button" class="x_close _cancel">&times;</button> <div class="x_modal-header"> <h1 class="_title"></h1> </div> <div class="x_modal-body"> <div class="_text"></div> </div> <div class="x_modal-footer"> <button type="button" class="x_btn x_pull-left _cancel">'+xe.lang.cmd_cancel+'</button> <button type="submit" class="x_btn x_btn-inverse x_pull-right x_btn-primary _ok">'+xe.lang.cmd_confirm+'</button> </div> ');
 	$("body").append($msgBox);
 	$msgBox.find("._ok").click(function(){
 		$.xeMsgBox.fnOnOK();
@@ -1513,13 +1523,13 @@ jQuery(function($){
 
 		// change text
 		if(options.create_type != 'save_and_use'){
-			$g11n_create.find('.save-useit').text(xe.cmd_save);
+			$g11n_create.find('.save-useit').text(xe.lang.cmd_save);
 		}
 
 		// #lang_create confirm
 		function g11n_create_save_confirm(){
 			if($g11n_create.is(':visible') && is_create_changed){
-				if(confirm(xe.msg_confirm_save_and_use_multilingual)){
+				if(confirm(xe.lang.msg_confirm_save_and_use_multilingual)){
 					$g11n_create.find('.save-useit').trigger('click');
 				}
 			}
@@ -1531,7 +1541,7 @@ jQuery(function($){
 		function g11n_search_save_confirm(){
 			if($g11n_search.is(':visible') && $g11n_search.find('.editMode').length){
 				var $search_item = $g11n_search.find('.editMode');
-				if(confirm(xe.msg_confirm_save_and_use_multilingual)){
+				if(confirm(xe.lang.msg_confirm_save_and_use_multilingual)){
 					$search_item.find('.save').trigger('click');
 				}else{
 					$search_item.find('.cancel').trigger('click');
@@ -1701,7 +1711,7 @@ jQuery(function($){
 			if(!options.view_modify) $g11n_search.find('.modify').hide();
 			if(!options.view_delete) $g11n_search.find('.delete').hide();
 			if(options.modify_type == 'save'){
-				$g11n_search.find('.save').text(xe.cmd_save);
+				$g11n_search.find('.save').text(xe.lang.cmd_save);
 			}
 
 			// Modify click
@@ -1727,7 +1737,7 @@ jQuery(function($){
 
 			// Delete click
 			$g11n_search.find('.delete').click(function(){
-				if(!confirm(xe.confirm_delete)) return;
+				if(!confirm(xe.lang.confirm_delete)) return;
 
 				var $this = $(this);
 
@@ -1827,7 +1837,7 @@ jQuery(function($){
 			});
 
 			if(!current_lang_value){
-				alert(xe.msg_empty_multilingual);
+				alert(xe.lang.msg_empty_multilingual);
 				return false;
 			}
 
@@ -1906,6 +1916,7 @@ jQuery(function($){
 
 			// make UI
 			var $this = $(this);
+			var width = $this.width();
 			var t = this;
 
 			if($this.parent().hasClass('g11n')){
@@ -1923,34 +1934,31 @@ jQuery(function($){
 
 			function makeUI(){
 				var $multilingualWindow = $('#g11n');
-				var width = $this.width();
 				var $displayInput;
 
 				if(t.tagName == 'TEXTAREA' || $this.data('type') == 'textarea'){
-					$displayInput = $('<textarea id="lang_' + id + '" class="lang_code" style="width:' + width + 'px" data-width="' + width + '">').data('lang-id', id);
+					$displayInput = $('<textarea id="lang_' + id + '" class="lang_code">').data('lang-id', id);
 				}else{
-					$displayInput = $('<input type="text" id="lang_' + id + '" class="lang_code" style="width:' + (width-28) + 'px" data-width="' + (width-28) + '">').data('lang-id', id);
+					$displayInput = $('<input type="text" id="lang_' + id + '" class="lang_code">').data('lang-id', id);
 				}
 				$displayInput.attr('placeholder', $this.attr('placeholder'));
 
-				var $remover = $('<button type="button" class="x_add-on remover" title="' + xe.cmd_remove_multilingual_text + '"><i class="x_icon-remove"></i>' + xe.cmd_remove_multilingual_text + '</button>').data('lang-target', id);
-				var $setter = $('<a href="#g11n" class="x_add-on modalAnchor" title="' + xe.cmd_set_multilingual_text + '"><i class="x_icon-globe"></i>' + xe.cmd_set_multilingual_text + '</a>').data('lang-target', id);
+				var $remover = $('<button type="button" class="x_add-on remover" title="' + xe.lang.cmd_remove_multilingual_text + '"><i class="x_icon-remove"></i>' + xe.lang.cmd_remove_multilingual_text + '</button>').data('lang-target', id);
+				var $setter = $('<a href="#g11n" class="x_add-on modalAnchor" title="' + xe.lang.cmd_set_multilingual_text + '"><i class="x_icon-globe"></i>' + xe.lang.cmd_set_multilingual_text + '</a>').data('lang-target', id);
 
 				$this.parent().addClass('g11n').addClass('x_input-append');
+				if ($this.hasClass('x_full-width')) {
+					$this.parent().addClass('x_full-width');
+				} else if (width) {
+					$this.parent().width(Math.max(220, width + 14));
+				}
 				$this.after($displayInput, $remover, $setter);
 				$this.hide();
 				$setter.attr('href', '#g11n').xeModalWindow();
 
 				// bind selected
 				$displayInput.bind('selected.g11n', function(e, code, value){
-					var width = $displayInput.width();
-
-					if(!$displayInput.data('active')){
-						width -= 44;
-					}
-
 					$displayInput
-						.width(width)
 						.attr('disabled', 'disabled')
 						.val(value)
 						.data('active', true)
@@ -1985,11 +1993,9 @@ jQuery(function($){
 
 					if(!$g11n_set_input.data('active')) return;
 
-					var width = $g11n_set_input.width();
 					$g11n_set_input
 						.val('')
 						.removeAttr('disabled')
-						.width(width + 44)
 						.data('active', false)
 						.parent('.g11n').removeClass('active');
 					$this.siblings('.lang_code').val('');
@@ -2009,7 +2015,6 @@ jQuery(function($){
 				function reset(){
 					$displayInput
 						.val($hiddenInput.val())
-						.width($displayInput.data('width'))
 						.removeAttr('disabled')
 						.data('active', false);
 					$displayInput.parent('.g11n').removeClass('active');
@@ -2023,10 +2028,8 @@ jQuery(function($){
 					function on_complete2(data){
 						if(!data || !data.langs) return;
 
-						var width = $displayInput.width();
-
 						$displayInput.closest('.g11n').addClass('active');
-						$displayInput.val(data.langs[xe.current_lang]).attr('disabled', 'disabled').width(width - 44).data('active', true);
+						$displayInput.val(data.langs[xe.current_lang]).attr('disabled', 'disabled').data('active', true);
 					}
 
 					if(pattern.test($displayInput.val())){
@@ -2377,7 +2380,7 @@ jQuery(function($){
 		$.xeMenuSelectorVar.$container = $.xeMsgBox.$msgBox;
 
 		$.xeMsgBox.confirmDialog({
-			sTitle : xe.msg_select_menu,
+			sTitle : xe.lang.msg_select_menu,
 
 			sText : '<select class="site_selector" style="width:100%;display:none"></select><div class="tree"></div>',
 
@@ -2447,7 +2450,7 @@ jQuery(function($){
 			var sDisallowedType = $this.attr('data-disallowedType');
 
 			// add html
-			var $btn = $('<a class="x_btn moduleTrigger">' + xe.cmd_find + '</a>');
+			var $btn = $('<a class="x_btn moduleTrigger">' + xe.lang.cmd_find + '</a>');
 			$btn.data('multiple', sMultiple);
 			$btn.data('allowedType', sAllowedType);
 			$btn.data('disallowedType', sDisallowedType);

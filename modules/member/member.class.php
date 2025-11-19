@@ -167,6 +167,9 @@ class Member extends ModuleObject
 		if(!$oDB->isIndexExists('member_auth_mail', 'idx_member_srl')) return true;
 		if($oDB->isIndexExists('member_auth_mail', 'unique_key')) return true;
 
+		// Check join form options column
+		if(!$oDB->isColumnExists('member_join_form', 'options')) return true;
+
 		// Update status column
 		$output = executeQuery('member.getDeniedAndStatus');
 		if ($output->data->count)
@@ -293,11 +296,11 @@ class Member extends ModuleObject
 		// Add columns for IP address
 		if(!$oDB->isColumnExists("member", "ipaddress"))
 		{
-			$oDB->addColumn("member", "ipaddress", "varchar", 120, null, false, 'regdate');
+			$oDB->addColumn("member", "ipaddress", "varchar", 60, null, false, 'regdate');
 		}
 		if(!$oDB->isColumnExists("member", "last_login_ipaddress"))
 		{
-			$oDB->addColumn("member", "last_login_ipaddress", "varchar", 120, null, false, 'last_login');
+			$oDB->addColumn("member", "last_login_ipaddress", "varchar", 60, null, false, 'last_login');
 		}
 		if(!$oDB->isIndexExists("member","idx_ipaddress"))
 		{
@@ -388,7 +391,11 @@ class Member extends ModuleObject
 		}
 		if(!$oDB->isIndexExists('member_auth_mail', 'unique_auth_key'))
 		{
-			$oDB->addIndex('member_auth_mail', 'unique_auth_key', ['auth_key'], true);
+			$output = $oDB->addIndex('member_auth_mail', 'unique_auth_key', ['auth_key'], true);
+			if (!$output->toBool())
+			{
+				return $output;
+			}
 		}
 		if(!$oDB->isIndexExists('member_auth_mail', 'idx_member_srl'))
 		{
@@ -397,6 +404,12 @@ class Member extends ModuleObject
 		if($oDB->isIndexExists('member_auth_mail', 'unique_key'))
 		{
 			$oDB->dropIndex('member_auth_mail', 'unique_key');
+		}
+
+		// Check join form options column
+		if(!$oDB->isColumnExists('member_join_form', 'options'))
+		{
+			$oDB->addColumn('member_join_form', 'options', 'text', null, null, null, 'default_value');
 		}
 
 		// Update status column

@@ -31,7 +31,7 @@ class DBQueryParser extends BaseParser
 	/**
 	 * Parse a query.
 	 *
-	 * @param SimpleXMLElement $xml
+	 * @param \SimpleXMLElement $xml
 	 * @param string $name
 	 * @return object
 	 */
@@ -175,9 +175,10 @@ class DBQueryParser extends BaseParser
 			foreach ($xml->groups->children() as $tag)
 			{
 				$name = $tag->getName();
+				$ifvar = trim($tag['if'] ?? '') ?: null;
 				if ($name === 'group')
 				{
-					$query->groupby->columns[] = trim($tag['column'] ?? '');
+					$query->groupby->columns[] = [trim($tag['column'] ?? ''), $ifvar];
 				}
 				elseif ($name === 'having')
 				{
@@ -248,7 +249,7 @@ class DBQueryParser extends BaseParser
 	/**
 	 * Parse conditions.
 	 *
-	 * @param SimpleXMLElement $parent
+	 * @param \SimpleXMLElement $parent
 	 * @return array
 	 */
 	protected static function _parseConditions(\SimpleXMLElement $parent): array
@@ -286,6 +287,7 @@ class DBQueryParser extends BaseParser
 				$group->conditions = self::_parseConditions($tag);
 				$group->pipe = strtoupper($attribs['pipe'] ?? '') ?: 'AND';
 				$group->ifvar = $attribs['if'] ?? null;
+				$group->not_null = ($attribs['notnull'] ?? false) ? true : false;
 				$result[] = $group;
 			}
 			elseif ($name === 'query')

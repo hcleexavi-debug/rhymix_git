@@ -20,6 +20,9 @@ class BoardController extends Board
 			throw new Rhymix\Framework\Exceptions\NotPermitted;
 		}
 
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
+
 		// setup variables
 		$obj = Context::getRequestVars();
 		$obj->module_srl = $this->module_srl;
@@ -27,7 +30,7 @@ class BoardController extends Board
 		unset($obj->extra_vars);
 
 		// Remove disallowed Unicode symbols.
-		if ($this->module_info->filter_specialchars !== 'N')
+		if ($this->module_info->filter_specialchars === 'Y')
 		{
 			if (isset($obj->title))
 			{
@@ -50,15 +53,15 @@ class BoardController extends Board
 		}
 
 		// Return error if content is too large.
-		$document_length_limit = ($this->module_info->document_length_limit ?: 1024) * 1024;
+		$document_length_limit = $this->module_info->document_length_limit * 1024;
 		if (strlen($obj->content) > $document_length_limit && !$this->grant->manager)
 		{
 			throw new Rhymix\Framework\Exception('msg_content_too_long');
 		}
 
 		// Return error if content conains excessively large data URLs.
-		$inline_data_url_limit = ($this->module_info->inline_data_url_limit ?: 64) * 1024;
-		preg_match_all('!src="\s*(data:[^,]*,[a-z0-9+/=%$!._-]+)!i', (string)$obj->content, $matches);
+		$inline_data_url_limit = $this->module_info->inline_data_url_limit * 1024;
+		preg_match_all('!src="\s*(data:[^,]*,[a-z0-9+/=\%\$\!._-]+)!i', (string)$obj->content, $matches);
 		foreach ($matches[1] as $match)
 		{
 			if (strlen($match) > $inline_data_url_limit)
@@ -68,32 +71,14 @@ class BoardController extends Board
 		}
 
 		// Check category
-		$category_list = DocumentModel::getCategoryList($this->module_srl);
-		if (count($category_list) > 0)
+		if (!$obj->category_srl && !$this->grant->manager && $this->module_info->allow_no_category !== 'Y')
 		{
-			if ($obj->category_srl)
+			$category_list = DocumentModel::getCategoryList($this->module_srl);
+			if (count($category_list) > 0)
 			{
-				if (isset($category_list[$obj->category_srl]))
-				{
-					if (!$category_list[$obj->category_srl]->grant)
-					{
-						return new BaseObject(-1, 'msg_not_permitted');
-					}
-				}
-				else
-				{
-					$obj->category_srl = 0;
-				}
-			}
-			if (!$obj->category_srl && ($this->module_info->allow_no_category ?? 'N') !== 'Y')
-			{
-				if (!$this->grant->manager)
-				{
-					return new BaseObject(-1, sprintf(lang('common.filter.isnull'), lang('common.category')));
-				}
+				return new BaseObject(-1, sprintf(lang('common.filter.isnull'), lang('common.category')));
 			}
 		}
-
 
 		// unset document style if not manager
 		if(!$this->grant->manager)
@@ -113,7 +98,7 @@ class BoardController extends Board
 		$use_status = explode('|@|', $this->module_info->use_status);
 
 		// Set status
-		if(($obj->is_secret == 'Y' || $obj->status == $secret_status) && is_array($use_status) && in_array($secret_status, $use_status))
+		if((($obj->is_secret ?? 'N') == 'Y' || $obj->status == $secret_status) && is_array($use_status) && in_array($secret_status, $use_status))
 		{
 			$obj->status = $secret_status;
 		}
@@ -131,11 +116,10 @@ class BoardController extends Board
 
 		$manual = false;
 		$logged_info = Context::get('logged_info');
-
 		$oDocument = DocumentModel::getDocument($obj->document_srl);
 
 		// Set anonymous information when insert mode or status is temp
-		if($this->module_info->use_anonymous == 'Y' && (!$this->grant->manager || ($this->module_info->anonymous_except_admin ?? 'N') !== 'Y') && (!$oDocument->isExists() || $oDocument->get('status') == DocumentModel::getConfigStatus('temp')))
+		if($this->module_info->use_anonymous == 'Y' && (!$this->grant->manager || $this->module_info->anonymous_except_admin === 'N') && (!$oDocument->isExists() || $oDocument->get('status') == DocumentModel::getConfigStatus('temp')))
 		{
 			if(!$obj->document_srl)
 			{
@@ -143,7 +127,7 @@ class BoardController extends Board
 			}
 
 			$manual = true;
-			$anonymous_name = $this->module_info->anonymous_name ?: 'anonymous';
+			$anonymous_name = $this->module_info->anonymous_name ?: BoardModel::DEFAULT_MODULE_CONFIG['anonymous_name'];
 			$anonymous_name = $this->createAnonymousName($anonymous_name, $logged_info->member_srl, $obj->document_srl);
 
 			$obj->notify_message = 'N';
@@ -172,7 +156,7 @@ class BoardController extends Board
 			}
 
 			// Protect admin document
-			if ($this->module_info->protect_admin_content_update !== 'N')
+			if ($this->module_info->protect_admin_content_update === 'Y')
 			{
 				$member_info = MemberModel::getMemberInfo($oDocument->get('member_srl'));
 				if($member_info->is_admin == 'Y' && $logged_info->is_admin != 'Y')
@@ -221,7 +205,14 @@ class BoardController extends Board
 					$obj->title_bold = $oDocument->get('title_bold');
 				}
 
-				$obj->reason_update = escape($obj->reason_update);
+				if (isset($obj->reason_update))
+				{
+					$obj->reason_update = escape($obj->reason_update);
+				}
+				else
+				{
+					$obj->reason_update = '';
+				}
 			}
 
 			// Update
@@ -248,7 +239,7 @@ class BoardController extends Board
 				$oDocument->setGrantForSession();
 
 				// send an email to admin user
-				if ($this->module_info->admin_mail && config('mail.default_from'))
+				if (isset($this->module_info->admin_mail) && $this->module_info->admin_mail && config('mail.default_from'))
 				{
 					$browser_title = Context::replaceUserLang($this->module_info->browser_title);
 					$mail_title = sprintf(lang('msg_document_notify_mail'), $browser_title, cut_str($obj->title, 20, '...'));
@@ -361,6 +352,9 @@ class BoardController extends Board
 			throw new Rhymix\Framework\Exceptions\NotPermitted;
 		}
 
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
+
 		// check protect content
 		if($this->module_info->protect_content == 'Y' || $this->module_info->protect_delete_content == 'Y')
 		{
@@ -370,7 +364,7 @@ class BoardController extends Board
 			}
 		}
 
-		if ($this->module_info->protect_admin_content_delete !== 'N' && $this->user->is_admin !== 'Y')
+		if ($this->module_info->protect_admin_content_delete === 'Y' && $this->user->is_admin !== 'Y')
 		{
 			$member_info = MemberModel::getMemberInfo($oDocument->get('member_srl'));
 			if($member_info->is_admin === 'Y')
@@ -462,8 +456,11 @@ class BoardController extends Board
 		// Comments belong in the same module_srl as the document.
 		$obj->module_srl = $oDocument->get('module_srl');
 
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
+
 		// Remove disallowed Unicode symbols.
-		if ($this->module_info->filter_specialchars !== 'N')
+		if ($this->module_info->filter_specialchars === 'Y')
 		{
 			if (isset($obj->content))
 			{
@@ -486,7 +483,7 @@ class BoardController extends Board
 
 		// Return error if content conains excessively large data URLs.
 		$inline_data_url_limit = ($this->module_info->inline_data_url_limit ?: 64) * 1024;
-		preg_match_all('!src="\s*(data:[^,]*,[a-z0-9+/=%$!._-]+)!i', (string)$obj->content, $matches);
+		preg_match_all('!src="\s*(data:[^,]*,[a-z0-9+/=\%\$\!._-]+)!i', (string)$obj->content, $matches);
 		foreach ($matches[1] as $match)
 		{
 			if (strlen($match) > $inline_data_url_limit)
@@ -495,12 +492,14 @@ class BoardController extends Board
 			}
 		}
 
-		if(!$this->module_info->use_status) $this->module_info->use_status = 'PUBLIC';
+		if(!$this->module_info->use_status)
+		{
+			$this->module_info->use_status = 'PUBLIC';
+		}
 		if(!is_array($this->module_info->use_status))
 		{
 			$this->module_info->use_status = explode('|@|', $this->module_info->use_status);
 		}
-
 		if(in_array('SECRET', $this->module_info->use_status))
 		{
 			$this->module_info->secret = 'Y';
@@ -512,7 +511,7 @@ class BoardController extends Board
 		}
 
 		// For anonymous use, remove writer's information and notifying information
-		if($this->module_info->use_anonymous == 'Y' && (!$this->grant->manager || ($this->module_info->anonymous_except_admin ?? 'N') !== 'Y'))
+		if($this->module_info->use_anonymous == 'Y' && (!$this->grant->manager || $this->module_info->anonymous_except_admin === 'N'))
 		{
 			$obj->notify_message = 'N';
 			$obj->member_srl = -1*$logged_info->member_srl;
@@ -547,7 +546,7 @@ class BoardController extends Board
 			}
 		}
 
-		if ($this->module_info->protect_admin_content_update !== 'N')
+		if ($this->module_info->protect_admin_content_update === 'Y')
 		{
 			$member_info = MemberModel::getMemberInfo($comment->member_srl);
 			if($member_info->is_admin == 'Y' && $logged_info->is_admin != 'Y')
@@ -563,7 +562,7 @@ class BoardController extends Board
 			$update_document = $this->module_info->update_order_on_comment === 'N' ? false : true;
 
 			// Check parent comment.
-			if($obj->parent_srl)
+			if (!empty($obj->parent_srl))
 			{
 				$parent_comment = CommentModel::getComment($obj->parent_srl);
 				if(!$parent_comment->comment_srl || $parent_comment->get('document_srl') != $oDocument->get('document_srl'))
@@ -651,6 +650,9 @@ class BoardController extends Board
 			throw new Rhymix\Framework\Exceptions\NotPermitted;
 		}
 
+		// Fix any missing module configurations
+		BoardModel::fixModuleConfig($this->module_info);
+
 		$childs = null;
 		if($this->module_info->protect_delete_comment === 'Y' && $this->grant->manager == false)
 		{
@@ -661,7 +663,7 @@ class BoardController extends Board
 			}
 		}
 
-		if ($this->module_info->protect_admin_content_delete !== 'N' && $this->user->is_admin !== 'Y')
+		if ($this->module_info->protect_admin_content_delete === 'Y' && $this->user->is_admin !== 'Y')
 		{
 			$member_info = MemberModel::getMemberInfo($comment->get('member_srl'));
 			if($member_info->is_admin === 'Y')

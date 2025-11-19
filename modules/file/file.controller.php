@@ -60,7 +60,7 @@ class FileController extends File
 		}
 
 		// Handle chunking
-		if (preg_match('!^bytes (\d+)-(\d+)/(\d+)$!', $_SERVER['HTTP_CONTENT_RANGE'], $matches))
+		if (preg_match('!^bytes (\d+)-(\d+)/(\d+)$!', $_SERVER['HTTP_CONTENT_RANGE'] ?? '', $matches))
 		{
 			// Check basic sanity
 			$chunk_start = intval($matches[1]);
@@ -325,7 +325,7 @@ class FileController extends File
 
 		// Not allow the file outlink
 		$file_module_config = FileModel::getFileConfig($file_obj->module_srl);
-		if($file_module_config->allow_outlink == 'N' && $_SERVER["HTTP_REFERER"])
+		if($file_module_config->allow_outlink == 'N' && !empty($_SERVER['HTTP_REFERER']))
 		{
 			// Handles extension to allow outlink
 			if($file_module_config->allow_outlink_format)
@@ -886,7 +886,7 @@ class FileController extends File
 		$file_info['name'] = Rhymix\Framework\Filters\FilenameFilter::clean($file_info['name']);
 		$file_info['type'] = Rhymix\Framework\MIME::getContentType($file_info['tmp_name']);
 		$file_info['original_type'] = $file_info['type'];
-		$file_info['extension'] = strtolower(array_pop(explode('.', $file_info['name'])));
+		$file_info['extension'] = strtolower(array_last(explode('.', $file_info['name'])));
 		$file_info['original_extension'] = $file_info['extension'];
 		$file_info['width'] = null;
 		$file_info['height'] = null;
@@ -1194,7 +1194,7 @@ class FileController extends File
 		{
 			$adjusted['type'] = 'mp4';
 		}
-		elseif (!empty($config->image_autoconv[$image_info['type']]))
+		elseif (!empty($config->image_autoconv[$image_info['type']]) && tobool($config->image_autoconv[$image_info['type']]))
 		{
 			$adjusted['type'] = $config->image_autoconv[$image_info['type']];
 		}
@@ -1265,7 +1265,14 @@ class FileController extends File
 				$adjusted['height'] = (int)$resize_height;
 				if (!$is_animated && $adjusted['type'] === $image_info['type'] && $config->max_image_size_same_format !== 'Y')
 				{
-					$adjusted['type'] = $config->max_image_size_same_format ?: 'jpg';
+					if (in_array($config->max_image_size_same_format, ['jpg', 'png', 'webp']))
+					{
+						$adjusted['type'] = $config->max_image_size_same_format;
+					}
+					else
+					{
+						$adjusted['type'] = 'jpg';
+					}
 				}
 			}
 		}
@@ -1281,6 +1288,12 @@ class FileController extends File
 			{
 				$force = true;
 			}
+		}
+
+		// Check if this image should be reencoded anyway
+		if (isset($config->image_always_reencode) && $config->image_always_reencode)
+		{
+			$force = true;
 		}
 
 		// Convert image if adjusted
@@ -1995,6 +2008,8 @@ class FileController extends File
 		}
 
 		$this->copyFiles($obj->source->document_srl, $obj->copied->module_srl, $obj->copied->document_srl, $obj->copied->content);
+		$this->setFilesValid($obj->copied->document_srl, 'doc');
+		DocumentController::getInstance()->updateUploadedCount($obj->copied->document_srl);
 	}
 
 	function triggerAddCopyCommentByDocument(&$obj)
@@ -2005,6 +2020,8 @@ class FileController extends File
 		}
 
 		$this->copyFiles($obj->source->comment_srl, $obj->copied->module_srl, $obj->copied->comment_srl, $obj->copied->content);
+		$this->setFilesValid($obj->copied->comment_srl, 'com');
+		CommentController::getInstance()->updateUploadedCount($obj->copied->comment_srl);
 	}
 
 	function triggerCopyModule(&$obj)

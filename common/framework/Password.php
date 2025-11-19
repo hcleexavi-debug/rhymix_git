@@ -112,7 +112,7 @@ class Password
 		{
 			unset($algos['argon2id']);
 		}
-		return array_first_key($algos);
+		return array_key_first($algos);
 	}
 
 	/**
@@ -128,12 +128,12 @@ class Password
 			$algorithm = $config->password_hashing_algorithm ?? '';
 			if (strval($algorithm) === '')
 			{
-				$algorithm = 'md5';
+				$algorithm = self::getBestSupportedAlgorithm();
 			}
 		}
 		else
 		{
-			$algorithm = 'md5';
+			$algorithm = self::getBestSupportedAlgorithm();
 		}
 		return $algorithm;
 	}

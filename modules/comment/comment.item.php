@@ -466,10 +466,12 @@ class CommentItem extends BaseObject
 		$content = trim(utf8_normalize_spaces(html_entity_decode(strip_tags($content))));
 		if($strlen)
 		{
-			$content = cut_str($content, $strlen, '...');
+			$content = escape(cut_str($content, $strlen, '...'), false);
 		}
-
-		$content = escape($content);
+		else
+		{
+			$content = escape($content);
+		}
 
 		if ($content === '')
 		{
@@ -511,9 +513,12 @@ class CommentItem extends BaseObject
 		$content = trim(utf8_normalize_spaces(html_entity_decode(strip_tags($content))));
 		if($strlen)
 		{
-			$content = cut_str($content, $strlen, '...');
+			return escape(cut_str($content, $strlen, '...'), false);
 		}
-		return escape($content);
+		else
+		{
+			return escape($content);
+		}
 	}
 
 	/**
@@ -594,7 +599,7 @@ class CommentItem extends BaseObject
 
 		// Truncate string
 		$content = cut_str($content, $str_size, $tail);
-		$content = escape($content);
+		$content = escape($content, false);
 
 		if ($content === '')
 		{
@@ -816,10 +821,15 @@ class CommentItem extends BaseObject
 
 		// Call trigger for custom thumbnails.
 		$trigger_obj = (object)[
-			'document_srl' => $this->document_srl, 'comment_srl' => $this->comment_srl,
-			'width' => $width, 'height' => $height,
-			'image_type' => 'jpg', 'type' => $thumbnail_type, 'quality' => $config->thumbnail_quality,
-			'filename' => $thumbnail_file, 'url' => $thumbnail_url,
+			'document_srl' => $this->document_srl,
+			'comment_srl' => $this->comment_srl,
+			'width' => $width,
+			'height' => $height,
+			'image_type' => 'jpg',
+			'type' => $thumbnail_type,
+			'quality' => $config->thumbnail_quality,
+			'filename' => $thumbnail_file,
+			'url' => $thumbnail_url,
 		];
 		$output = ModuleHandler::triggerCall('comment.getThumbnail', 'before', $trigger_obj);
 		clearstatcache(true, $thumbnail_file);
@@ -877,8 +887,16 @@ class CommentItem extends BaseObject
 		// get an image file from the doc content if no file attached.
 		if(!$source_file && $config->thumbnail_target !== 'attachment')
 		{
-			$external_image_min_width = min(100, round($trigger_obj->width * 0.3));
-			$external_image_min_height = min(100, round($trigger_obj->height * 0.3));
+			$external_image_min_width = is_numeric($trigger_obj->width) ? min(100, round(intval($trigger_obj->width) * 0.3)) : 100;
+			if($trigger_obj->height === 'auto')
+			{
+				$external_image_min_height = min(100, $external_image_min_width * 0.5);
+			}
+			else
+			{
+				$external_image_min_height = is_numeric($trigger_obj->height) ? min(100, round(intval($trigger_obj->height) * 0.3)) : 100;
+			}
+
 			preg_match_all("!<img\s[^>]*?src=(\"|')([^\"' ]*?)(\"|')!is", $this->get('content'), $matches, PREG_SET_ORDER);
 			foreach($matches as $match)
 			{

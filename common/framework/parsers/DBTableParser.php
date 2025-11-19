@@ -33,7 +33,7 @@ class DBTableParser extends BaseParser
 	 * @param string $content
 	 * @return ?object
 	 */
-	public static function loadXML(string $filename = '', string $content = ''): object
+	public static function loadXML(string $filename = '', string $content = ''): ?object
 	{
 		// Load the XML content.
 		if ($content)
@@ -61,17 +61,30 @@ class DBTableParser extends BaseParser
 			$table->name = strval($xml['name']);
 		}
 
-		$deleted = strval($xml['deleted']);
-		if ($deleted !== '')
+		$is_deleted = strval($xml['deleted']);
+		if ($is_deleted !== '')
 		{
-			$table->deleted = toBool($deleted);
+			$table->is_deleted = toBool($is_deleted);
 		}
 
 		// Load columns.
 		foreach ($xml->column as $column_info)
 		{
+			// Is this column generated?
+			$is_generated = strval($column_info['generated'] ?? '') !== '';
+			if ($is_generated)
+			{
+				$column = new DBTable\GeneratedColumn;
+				$column->generated = strtolower($column_info['generated']);
+				$column->is_stored = strtolower($column_info['stored'] ?? '');
+				$column->is_stored = $column->is_stored !== 'virtual' && toBool($column->is_stored);
+			}
+			else
+			{
+				$column = new DBTable\Column;
+			}
+
 			// Get the column name and type.
-			$column = new DBTable\Column;
 			$column->name = strval($column_info['name']);
 			list($column->type, $column->xetype, $column->size) = self::getTypeAndSize(strval($column_info['type']), strval($column_info['size']));
 
@@ -304,7 +317,13 @@ class DBTableParser extends BaseParser
 					if ($constraint->references)
 					{
 						$ref = explode('.', $constraint->references);
-						$info->refs[] = $ref[0];
+						$reference_table_name = $ref[0];
+						if ($reference_table_name === $table_name)
+						{
+							continue; // Ignore self-references.
+						}
+
+						$info->refs[] = $reference_table_name;
 					}
 				}
 				$ref_list[$table_name] = $info;
@@ -328,7 +347,6 @@ class DBTableParser extends BaseParser
 						}
 					}
 				}
-				$k++;
 			}
 			if (!$changed)
 			{

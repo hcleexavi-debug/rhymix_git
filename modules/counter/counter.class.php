@@ -15,7 +15,7 @@ class counter extends ModuleObject
 	 */
 	function moduleInstall()
 	{
-		
+
 	}
 
 	/**
@@ -30,7 +30,21 @@ class counter extends ModuleObject
 		{
 			return true;
 		}
-		
+
+		// Index optimization
+		if (!$oDB->isIndexExists('counter_log', 'idx_regdate_ipaddress'))
+		{
+			return true;
+		}
+		if ($oDB->isIndexExists('counter_log', 'idx_site_counter_log'))
+		{
+			return true;
+		}
+		if ($oDB->isIndexExists('counter_log', 'idx_counter_log'))
+		{
+			return true;
+		}
+
 		return false;
 	}
 
@@ -46,6 +60,20 @@ class counter extends ModuleObject
 		{
 			$oDB->dropTable('counter_site_status');
 		}
+
+		// Index optimization
+		if (!$oDB->isIndexExists('counter_log', 'idx_regdate_ipaddress'))
+		{
+			$oDB->addIndex('counter_log', 'idx_regdate_ipaddress', ['regdate(8)', 'ipaddress']);
+		}
+		if ($oDB->isIndexExists('counter_log', 'idx_site_counter_log'))
+		{
+			$oDB->dropIndex('counter_log', 'idx_site_counter_log');
+		}
+		if ($oDB->isIndexExists('counter_log', 'idx_counter_log'))
+		{
+			$oDB->dropIndex('counter_log', 'idx_counter_log');
+		}
 	}
 
 	/**
@@ -55,7 +83,7 @@ class counter extends ModuleObject
 	 */
 	function recompileCache()
 	{
-		
+
 	}
 
 }

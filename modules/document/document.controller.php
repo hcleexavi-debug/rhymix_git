@@ -607,17 +607,39 @@ class DocumentController extends Document
 	 */
 	function insertDocument($obj, $manual_inserted = false, $isRestore = false, $isLatest = true)
 	{
-		if(!$manual_inserted && !checkCSRF())
+		if (!$manual_inserted && !checkCSRF())
 		{
 			return new BaseObject(-1, 'msg_security_violation');
 		}
 
-		// List variables
-		if($obj->comment_status) $obj->commentStatus = $obj->comment_status;
-		if(!$obj->commentStatus) $obj->commentStatus = 'DENY';
-		if($obj->commentStatus == 'DENY') $this->_checkCommentStatusForOldVersion($obj);
-		if($obj->allow_trackback!='Y') $obj->allow_trackback = 'N';
-		if($obj->homepage)
+		// Comment status
+		if (isset($obj->comment_status) && $obj->comment_status)
+		{
+			$obj->commentStatus = $obj->comment_status;
+		}
+		if (!isset($obj->commentStatus) || !$obj->commentStatus)
+		{
+			$obj->commentStatus = 'DENY';
+		}
+		if ($obj->commentStatus === 'DENY')
+		{
+			$this->_checkCommentStatusForOldVersion($obj);
+		}
+
+		if (!isset($obj->allow_trackback) || $obj->allow_trackback !== 'Y')
+		{
+			$obj->allow_trackback = 'N';
+		}
+		if (!isset($obj->notify_message) || $obj->notify_message !== 'Y')
+		{
+			$obj->notify_message = 'N';
+		}
+		if (!isset($obj->email_address))
+		{
+			$obj->email_address = '';
+		}
+
+		if (!empty($obj->homepage))
 		{
 			$obj->homepage = escape($obj->homepage);
 			if(!preg_match('/^[a-z]+:\/\//i',$obj->homepage))
@@ -626,20 +648,21 @@ class DocumentController extends Document
 			}
 		}
 
-		if($obj->notify_message != 'Y') $obj->notify_message = 'N';
-		if(!$obj->email_address) $obj->email_address = '';
-		if(!$isRestore) $obj->ipaddress = \RX_CLIENT_IP;
+		if (!$isRestore)
+		{
+			$obj->ipaddress = \RX_CLIENT_IP;
+		}
 		$obj->isRestore = $isRestore ? true : false;
 
 		// Sanitize variables
-		$obj->document_srl = intval($obj->document_srl);
-		$obj->category_srl = intval($obj->category_srl);
-		$obj->module_srl = intval($obj->module_srl);
+		$obj->document_srl = intval($obj->document_srl ?? 0);
+		$obj->category_srl = intval($obj->category_srl ?? 0);
+		$obj->module_srl = intval($obj->module_srl ?? 0);
 
 		// Default Status
-		if($obj->status)
+		if (isset($obj->status) && $obj->status)
 		{
-			if(!in_array($obj->status, $this->getStatusList()))
+			if (!in_array($obj->status, $this->getStatusList()))
 			{
 				$obj->status = $this->getDefaultStatus();
 			}
@@ -652,16 +675,16 @@ class DocumentController extends Document
 		// Check publish status
 		$is_publish = $obj->status !== 'TEMP';
 
-		// can modify regdate only manager
+		// Dates can only be manipulated by administrators.
 		$grant = Context::get('grant');
-		if(!$grant->manager)
+		if (!$grant->manager)
 		{
 			unset($obj->regdate);
 			unset($obj->last_update);
 			unset($obj->last_updater);
 		}
 
-		// Serialize the $extra_vars, check the extra_vars type, because duplicate serialized avoid
+		// Serialize the $extra_vars, but avoid duplicate serialization.
 		if (!isset($obj->extra_vars))
 		{
 			$obj->extra_vars = new stdClass;
@@ -733,7 +756,7 @@ class DocumentController extends Document
 				{
 					if (!$category_list[$obj->category_srl]->grant)
 					{
-						return new BaseObject(-1, 'msg_not_permitted');
+						return new BaseObject(-1, 'document.msg_category_not_permitted');
 					}
 				}
 				else
@@ -741,21 +764,34 @@ class DocumentController extends Document
 					$obj->category_srl = 0;
 				}
 			}
+			else
+			{
+				$obj->category_srl = 0;
+			}
 		}
 
 		// Set the read counts and update order.
-		if(!$obj->readed_count) $obj->readed_count = 0;
-		if($isLatest) $obj->update_order = $obj->list_order = $obj->document_srl * -1;
-		else $obj->update_order = $obj->list_order;
+		if (!isset($obj->readed_count))
+		{
+			$obj->readed_count = 0;
+		}
+		if ($isLatest)
+		{
+			$obj->update_order = $obj->list_order = $obj->document_srl * -1;
+		}
+		else
+		{
+			$obj->update_order = $obj->list_order;
+		}
 
 		// Check the status of password hash for manually inserting. Apply hashing for otherwise.
-		if($obj->password && !$obj->password_is_hashed)
+		if(!empty($obj->password) && !$obj->password_is_hashed)
 		{
 			$obj->password = \Rhymix\Framework\Password::hashPassword($obj->password, \Rhymix\Framework\Password::getBackwardCompatibleAlgorithm());
 		}
 
 		// If the tile is empty, extract string from the contents.
-		$obj->title = escape($obj->title, false);
+		$obj->title = escape($obj->title ?? '', false);
 		if ($obj->title === '')
 		{
 			$obj->title = escape(cut_str(trim(utf8_normalize_spaces(strip_tags($obj->content))), 20, '...'), false);
@@ -814,7 +850,7 @@ class DocumentController extends Document
 		{
 			foreach($extra_keys as $idx => $extra_item)
 			{
-				$value = NULL;
+				$value = $sort_value = null;
 				if(isset($obj->{'extra_vars'.$idx}))
 				{
 					$tmp = $obj->{'extra_vars'.$idx};
@@ -867,7 +903,11 @@ class DocumentController extends Document
 				}
 
 				$extra_vars[$extra_item->name] = $value;
-				$this->insertDocumentExtraVar($obj->module_srl, $obj->document_srl, $idx, $value, $extra_item->eid);
+				if ($extra_item->type === 'number')
+				{
+					$sort_value = (int)$value;
+				}
+				$this->insertDocumentExtraVar($obj->module_srl, $obj->document_srl, $idx, $value, $extra_item->eid, null, $sort_value);
 			}
 		}
 
@@ -912,8 +952,8 @@ class DocumentController extends Document
 		{
 			$this->addGrant($obj->document_srl);
 		}
-		$output->add('document_srl',$obj->document_srl);
-		$output->add('category_srl',$obj->category_srl);
+		$output->add('document_srl', $obj->document_srl);
+		$output->add('category_srl', $obj->category_srl);
 
 		return $output;
 	}
@@ -1080,7 +1120,7 @@ class DocumentController extends Document
 				{
 					if (!$category_list[$obj->category_srl]->grant)
 					{
-						return new BaseObject(-1, 'msg_not_permitted');
+						return new BaseObject(-1, 'document.msg_category_not_permitted');
 					}
 				}
 				else
@@ -1088,10 +1128,14 @@ class DocumentController extends Document
 					$obj->category_srl = 0;
 				}
 			}
+			else
+			{
+				$obj->category_srl = 0;
+			}
 		}
 
 		// Hash the password if it exists
-		if($obj->password)
+		if (!empty($obj->password))
 		{
 			$obj->password = \Rhymix\Framework\Password::hashPassword($obj->password, \Rhymix\Framework\Password::getBackwardCompatibleAlgorithm());
 		}
@@ -1197,7 +1241,7 @@ class DocumentController extends Document
 			{
 				foreach($extra_keys as $idx => $extra_item)
 				{
-					$value = NULL;
+					$value = $sort_value = null;
 					if(isset($obj->{'extra_vars'.$idx}))
 					{
 						$tmp = $obj->{'extra_vars'.$idx};
@@ -1294,7 +1338,11 @@ class DocumentController extends Document
 						}
 					}
 					$extra_vars[$extra_item->name] = $value;
-					$this->insertDocumentExtraVar($obj->module_srl, $obj->document_srl, $idx, $value, $extra_item->eid);
+					if ($extra_item->type === 'number')
+					{
+						$sort_value = (int)$value;
+					}
+					$this->insertDocumentExtraVar($obj->module_srl, $obj->document_srl, $idx, $value, $extra_item->eid, null, $sort_value);
 				}
 			}
 
@@ -1326,7 +1374,7 @@ class DocumentController extends Document
 		if($obj->update_log_setting === 'Y')
 		{
 			$obj->extra_vars = serialize($extra_vars);
-			if($this->grant->manager)
+			if($grant->manager)
 			{
 				$obj->is_admin = 'Y';
 			}
@@ -1360,7 +1408,8 @@ class DocumentController extends Document
 		// Remove the thumbnail file
 		Rhymix\Framework\Storage::deleteDirectory(RX_BASEDIR . sprintf('files/thumbnails/%s', getNumberingPath($obj->document_srl, 3)));
 
-		$output->add('document_srl',$obj->document_srl);
+		$output->add('document_srl', $obj->document_srl);
+		$output->add('category_srl', $obj->category_srl);
 
 		//remove from cache
 		self::clearDocumentCache($obj->document_srl);
@@ -1394,13 +1443,13 @@ class DocumentController extends Document
 		$update_args->document_srl = $obj->document_srl;
 		$update_args->update_member_srl = intval($logged_info->member_srl ?? 0);
 		$update_args->title = $obj->title;
-		$update_args->title_bold = $obj->title_bold;
-		$update_args->title_color = $obj->title_color;
+		$update_args->title_bold = $obj->title_bold ?? 'N';
+		$update_args->title_color = $obj->title_color ?? null;
 		$update_args->content = $obj->content;
 		$update_args->update_nick_name = strval($logged_info->nick_name ?? $obj->nick_name);
 		$update_args->tags = $obj->tags;
 		$update_args->extra_vars = $obj->extra_vars;
-		$update_args->reason_update = $obj->reason_update;
+		$update_args->reason_update = $obj->reason_update ?? '';
 		$update_args->is_admin = $obj->is_admin;
 		$update_output = executeQuery('document.insertDocumentUpdateLog', $update_args);
 
@@ -1741,9 +1790,10 @@ class DocumentController extends Document
 	 * @param int $eid
 	 * @param string $var_is_strict
 	 * @param array $var_options
+	 * @param string $var_sort
 	 * @return object
 	 */
-	function insertDocumentExtraKey($module_srl, $var_idx, $var_name, $var_type, $var_is_required = 'N', $var_search = 'N', $var_default = '', $var_desc = '', $eid = 0, $var_is_strict = 'N', $var_options = null)
+	function insertDocumentExtraKey($module_srl, $var_idx, $var_name, $var_type, $var_is_required = 'N', $var_search = 'N', $var_default = '', $var_desc = '', $eid = 0, $var_is_strict = 'N', $var_options = null, $var_sort = 'N')
 	{
 		if (!$module_srl || !$var_idx || !$var_name || !$var_type || !$eid)
 		{
@@ -1758,6 +1808,7 @@ class DocumentController extends Document
 		$obj->var_is_required = $var_is_required=='Y'?'Y':'N';
 		$obj->var_is_strict = $var_is_strict=='Y'?'Y':'N';
 		$obj->var_search = $var_search=='Y'?'Y':'N';
+		$obj->var_sort = $var_sort=='Y'?'Y':'N';
 		$obj->var_default = $var_default;
 		$obj->var_options = $var_options ? json_encode($var_options, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES) : null;
 		$obj->var_desc = $var_desc;
@@ -1775,6 +1826,7 @@ class DocumentController extends Document
 			$output = executeQuery('document.updateDocumentExtraVar', $obj);
 		}
 
+		unset($GLOBALS['XE_EXTRA_KEYS'][$module_srl]);
 		Rhymix\Framework\Cache::delete("site_and_module:module_document_extra_keys:$module_srl");
 		return $output;
 	}
@@ -1831,6 +1883,7 @@ class DocumentController extends Document
 
 		$oDB->commit();
 
+		unset($GLOBALS['XE_EXTRA_KEYS'][$module_srl]);
 		Rhymix\Framework\Cache::delete("site_and_module:module_document_extra_keys:$module_srl");
 		return new BaseObject();
 	}
@@ -1843,9 +1896,10 @@ class DocumentController extends Document
 	 * @param mixed $value
 	 * @param int $eid
 	 * @param string $lang_code
-	 * @return Object|void
+	 * @param ?int $sort_value
+	 * @return BaseObject
 	 */
-	public static function insertDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid = null, $lang_code = null)
+	public static function insertDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid = null, $lang_code = null, $sort_value = null)
 	{
 		if(!$module_srl || !$document_srl || !$idx_or_eid || !isset($value))
 		{
@@ -1878,6 +1932,7 @@ class DocumentController extends Document
 		$obj->document_srl = $document_srl;
 		$obj->var_idx = $idx_or_eid;
 		$obj->value = $value;
+		$obj->sort_value = $sort_value;
 		$obj->lang_code = $lang_code ?: Context::getLangType();
 		$obj->eid = $eid;
 
@@ -1892,9 +1947,10 @@ class DocumentController extends Document
 	 * @param mixed $value
 	 * @param int $eid
 	 * @param string $lang_code
-	 * @return Object|void
+	 * @param ?int $sort_value
+	 * @return BaseObject
 	 */
-	public static function updateDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid = null, $lang_code = null)
+	public static function updateDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid = null, $lang_code = null, $sort_value = null)
 	{
 		if(!$module_srl || !$document_srl || !$idx_or_eid || !isset($value))
 		{
@@ -1922,13 +1978,10 @@ class DocumentController extends Document
 			}
 		}
 
-		$obj = new stdClass;
-		$obj->module_srl = $module_srl;
-		$obj->document_srl = $document_srl;
-		$obj->var_idx = $idx_or_eid;
-		$obj->value = $value;
-		$obj->lang_code = $lang_code ?: Context::getLangType();
-		$obj->eid = $eid;
+		if (!$lang_code)
+		{
+			$lang_code = Context::getLangType();
+		}
 
 		$oDB = DB::getInstance();
 		$oDB->begin();
@@ -1940,7 +1993,7 @@ class DocumentController extends Document
 			return $output;
 		}
 
-		$output = self::insertDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid, $lang_code);
+		$output = self::insertDocumentExtraVar($module_srl, $document_srl, $idx_or_eid, $value, $eid, $lang_code, $sort_value);
 		if (!$output->toBool())
 		{
 			$oDB->rollback();
@@ -1958,7 +2011,7 @@ class DocumentController extends Document
 	 * @param int $var_idx
 	 * @param string $lang_code
 	 * @param int $eid
-	 * @return $output
+	 * @return BaseObject
 	 */
 	public static function deleteDocumentExtraVars($module_srl, $document_srl = null, $var_idx = null, $lang_code = null, $eid = null)
 	{
@@ -1968,8 +2021,7 @@ class DocumentController extends Document
 		if(!is_null($var_idx)) $obj->var_idx = $var_idx;
 		if(!is_null($lang_code)) $obj->lang_code = $lang_code;
 		if(!is_null($eid)) $obj->eid = $eid;
-		$output = executeQuery('document.deleteDocumentExtraVars', $obj);
-		return $output;
+		return executeQuery('document.deleteDocumentExtraVars', $obj);
 	}
 
 
@@ -1992,9 +2044,16 @@ class DocumentController extends Document
 		}
 
 		// Return fail if session already has information about votes
-		if(!empty($_SESSION['voted_document'][$document_srl]))
+		if (!empty($_SESSION['voted_document'][$document_srl]))
 		{
-			return new BaseObject(-1, $failed_voted . '_already');
+			if ($_SESSION['voted_document'][$document_srl] > 0)
+			{
+				return new BaseObject(-1, 'failed_voted_already');
+			}
+			else
+			{
+				return new BaseObject(-1, 'failed_blamed_already');
+			}
 		}
 
 		// Get the original document
@@ -2035,10 +2094,17 @@ class DocumentController extends Document
 		$output = executeQuery('document.getDocumentVotedLogInfo', $args);
 
 		// Pass after registering a session if log information has vote-up logs
-		if($output->data->count)
+		if ($output->data->count)
 		{
-			$_SESSION['voted_document'][$document_srl] = false;
-			return new BaseObject(-1, $failed_voted);
+			$_SESSION['voted_document'][$document_srl] = intval($output->data->point);
+			if ($output->data->point > 0)
+			{
+				return new BaseObject(-1, 'failed_voted_already');
+			}
+			else
+			{
+				return new BaseObject(-1, 'failed_blamed_already');
+			}
 		}
 
 		// Call a trigger (before)
@@ -2732,7 +2798,7 @@ class DocumentController extends Document
 		if(!$args) $args = Context::gets('module_srl','category_srl','parent_srl','category_title','category_description','expand','is_default','group_srls','category_color','mid');
 		$args->title = trim($args->category_title);
 		$args->description = trim($args->category_description);
-		$args->color = $args->category_color;
+		$args->color = trim($args->category_color);
 		$args->expand = (isset($args->expand) && $args->expand === 'Y') ? 'Y' : 'N';
 		$args->is_default = (isset($args->is_default) && $args->is_default === 'Y') ? 'Y' : 'N';
 
@@ -3267,16 +3333,23 @@ class DocumentController extends Document
 		}
 
 		// Get document_srl
-		$srls = explode(',',Context::get('srls'));
-		for($i = 0; $i < count($srls); $i++)
+		$srls = Context::get('srls');
+		if (is_array($srls))
 		{
-			$srl = trim($srls[$i]);
-
-			if(!$srl) continue;
-
-			$document_srls[] = $srl;
+			$document_srls = array_map('intval', $srls);
 		}
-		if(!count($document_srls)) return;
+		else
+		{
+			$document_srls = array_map('intval', explode(',', $srls));
+		}
+
+		$document_srls = array_unique(array_filter($document_srls, function($srl) {
+			return $srl > 0;
+		}));
+		if (!count($document_srls))
+		{
+			return;
+		}
 
 		// Get module_srl of the documents
 		$args = new stdClass;
@@ -3346,8 +3419,12 @@ class DocumentController extends Document
 		$obj->target_module_srl = intval(Context::get('module_srl') ?: Context::get('target_module_srl'));
 		$obj->target_category_srl = intval(Context::get('target_category_srl'));
 		$obj->manager_message = Context::get('message_content') ? nl2br(escape(strip_tags(Context::get('message_content')))) : '';
-		$obj->send_message = $obj->manager_message || Context::get('send_default_message') == 'Y';
+		$obj->send_message = Context::get('send_message') ?? 'default';
 		$obj->return_message = '';
+		if (Context::get('send_default_message') === 'Y')
+		{
+			$obj->send_message = 'default';
+		}
 
 		// Check permission of target module
 		if($obj->target_module_srl)
@@ -3478,40 +3555,42 @@ class DocumentController extends Document
 
 		// Send a message
 		$actions = lang('default_message_verbs');
-		if(isset($actions[$obj->type]) && $obj->send_message)
+		if(isset($actions[$obj->type]) && $obj->send_message !== 'none')
 		{
 			// Set message
 			$title = sprintf(lang('default_message_format'), $actions[$obj->type]);
-			$content = <<< Content
-<div style="padding:10px 0;"><strong>{$title}</strong></div>
-<p>{$obj->manager_message}</p>
-<hr>
-<ul>%1\$s</ul>
-Content;
-			$document_item = '<li><a href="%1$s">%2$s</a></li>';
+			$content = <<<EOT
+				<div style="padding:10px 0;"><strong>{$title}</strong></div>
+				<p>{$obj->manager_message}</p>
+				<hr>
+				<ul>%1\$s</ul>
+			EOT;
 
 			// Set recipient
 			$recipients = array();
 			foreach ($obj->document_list as $document_srl => $oDocument)
 			{
-				if(!($member_srl = abs($oDocument->get('member_srl'))) || $logged_info->member_srl == $member_srl)
+				$member_srl = abs($oDocument->get('member_srl'));
+				if(!$member_srl || $logged_info->member_srl == $member_srl)
 				{
 					continue;
 				}
-
 				if(!isset($recipients[$member_srl]))
 				{
 					$recipients[$member_srl] = array();
 				}
-
-				$recipients[$member_srl][] = sprintf($document_item, $oDocument->getPermanentUrl(), $oDocument->getTitleText());
+				$recipients[$member_srl][] = vsprintf('<li><a href="%1$s">%2$s</a></li>', [
+					escape($oDocument->getPermanentUrl()),
+					$oDocument->getTitleText(),
+				]);
 			}
 
 			// Send
 			$oCommunicationController = CommunicationController::getInstance();
 			foreach ($recipients as $member_srl => $items)
 			{
-				$oCommunicationController->sendMessage($this->user->member_srl, $member_srl, $title, sprintf($content, implode('', $items)), true, null, false);
+				$content = sprintf($content, implode('', $items));
+				$oCommunicationController->sendMessage($this->user->member_srl, $member_srl, $title, $content, true, null, false);
 			}
 		}
 
@@ -3708,6 +3787,7 @@ Content;
 		if ($type === 'all' || $type === 'extra_vars')
 		{
 			unset($GLOBALS['XE_EXTRA_VARS'][$document_srl]);
+			unset($GLOBALS['XE_EXTRA_CHK'][$document_srl]);
 			unset($GLOBALS['RX_DOCUMENT_LANG'][$document_srl]);
 		}
 	}
@@ -3746,7 +3826,17 @@ Content;
 		}
 	}
 
+	/**
+	 * A typo of updateUploadedCount, maintained for backward compatibility.
+	 *
+	 * @deprecated
+	 */
 	public function updateUploaedCount($document_srl_list)
+	{
+		return $this->updateUploadedCount($document_srl_list);
+	}
+
+	public function updateUploadedCount($document_srl_list)
 	{
 		if(!is_array($document_srl_list))
 		{
@@ -3762,7 +3852,8 @@ Content;
 
 		foreach($document_srl_list as $document_srl)
 		{
-			if(!$document_srl = (int) $document_srl)
+			$document_srl = (int)$document_srl;
+			if ($document_srl <= 0)
 			{
 				continue;
 			}
@@ -3782,7 +3873,7 @@ Content;
 			return;
 		}
 
-		$this->updateUploaedCount($file->upload_target_srl);
+		$this->updateUploadedCount($file->upload_target_srl);
 	}
 
 	/**

@@ -36,6 +36,7 @@ class Value
 	public $is_disabled = 'N';
 	public $is_readonly = 'N';
 	public $search = 'N';
+	public $sort = 'N';
 	public $style = null;
 
 	/**
@@ -87,8 +88,9 @@ class Value
 	 * @param string $parent_type
 	 * @param string $is_strict
 	 * @param string $options
+	 * @param string $sort
 	 */
-	function __construct(int $module_srl, int $idx, string $name, string $type = 'text', $default = null, $desc = '', $is_required = 'N', $search = 'N', $value = null, $eid = '', $parent_type = 'document', $is_strict = '', $options = null)
+	function __construct(int $module_srl, int $idx, string $name, string $type = 'text', $default = null, $desc = '', $is_required = 'N', $search = 'N', $value = null, $eid = '', $parent_type = 'document', $is_strict = '', $options = null, $sort = 'N')
 	{
 		if (!$idx)
 		{
@@ -108,6 +110,7 @@ class Value
 		$this->is_required = $is_required;
 		$this->is_strict = $is_strict;
 		$this->search = $search;
+		$this->sort = $sort;
 	}
 
 	/**
@@ -195,9 +198,9 @@ class Value
 		{
 			return $this->default;
 		}
-		elseif ($this->default)
+		elseif ($this->default && $this->parent_type !== 'member' && !in_array($this->type, ['checkbox', 'radio']))
 		{
-			return array_first($this->getOptions());
+			return is_array($this->default) ? array_first($this->default) : array_first(explode(',', $this->default));
 		}
 		else
 		{

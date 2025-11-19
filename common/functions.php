@@ -11,7 +11,7 @@
  *
  * @param string $key
  * @param string $value (optional)
- * @return mixed
+ * @return string|array|null
  */
 function config(string $key, $value = null)
 {
@@ -56,9 +56,12 @@ function lang(?string $code, $value = null)
  * @param array $array The input array
  * @return mixed
  */
-function array_first(array $array)
+if (!function_exists('array_first'))
 {
-	return reset($array);
+	function array_first(array $array)
+	{
+		return reset($array);
+	}
 }
 
 /**
@@ -69,8 +72,7 @@ function array_first(array $array)
  */
 function array_first_key(array $array)
 {
-	reset($array);
-	return key($array);
+	return array_key_first($array);
 }
 
 /**
@@ -79,9 +81,12 @@ function array_first_key(array $array)
  * @param array $array The input array
  * @return mixed
  */
-function array_last(array $array)
+if (!function_exists('array_last'))
 {
-	return end($array);
+	function array_last(array $array)
+	{
+		return end($array);
+	}
 }
 
 /**
@@ -92,8 +97,7 @@ function array_last(array $array)
  */
 function array_last_key(array $array)
 {
-	end($array);
-	return key($array);
+	return array_key_last($array);
 }
 
 /**
@@ -256,7 +260,7 @@ function escape_dqstr(string $str): string
  * @param string $escape_char The escape character (default: backslash)
  * @return array
  */
-function explode_with_escape(string $delimiter, string $str, $limit = 0, $escape_char = '\\'): array
+function explode_with_escape(string $delimiter, string $str, int $limit = 0, string $escape_char = '\\'): array
 {
 	if ($limit < 1) $limit = 0;
 	$str = (string)$str;
@@ -417,7 +421,7 @@ function base64_decode_urlsafe(string $str): string
 /**
  * This function shortens a number using common suffixes.
  *
- * @param int $number The number to shorten
+ * @param int|float $number The number to shorten
  * @param int $significant_digits The number of significant digits to retain
  * @return string
  */
@@ -667,7 +671,7 @@ function utf8_mbencode($str): string
 		$bytes = array(ord($m[0][0]), ord($m[0][1]), ord($m[0][2]), ord($m[0][3]));
 		$codepoint = ((0x07 & $bytes[0]) << 18) + ((0x3F & $bytes[1]) << 12) + ((0x3F & $bytes[2]) << 6) + (0x3F & $bytes[3]);
 		return '&#x' . dechex($codepoint) . ';';
-	}, (string)$str);
+	}, (string)$str) ?? '';
 }
 
 /**
@@ -682,11 +686,11 @@ function utf8_normalize_spaces($str, bool $multiline = false): string
 {
 	if ($multiline)
 	{
-		return preg_replace(['/((?!\x0A)[\pZ\pC])+/u', '/\x20*\x0A\x20*/'], [' ', "\n"], (string)$str);
+		return preg_replace(['/((?!\x0A)[\pZ\pC])+/u', '/\x20*\x0A\x20*/'], [' ', "\n"], (string)$str) ?? '';
 	}
 	else
 	{
-		return preg_replace('/[\pZ\pC]+/u', ' ', (string)$str);
+		return preg_replace('/[\pZ\pC]+/u', ' ', (string)$str) ?? '';
 	}
 }
 

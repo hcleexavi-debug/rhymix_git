@@ -10,6 +10,10 @@ article, aside, details, figcaption, figure, footer, header, hgroup, nav, sectio
 }
 body {
 	position: relative;
+	&.rx_modal_open {
+		overflow: hidden;
+		position: fixed;
+	}
 }
 a img {
 	border: 0;
@@ -28,6 +32,7 @@ a img {
 	} @else {
 		word-break: $default_word_break;
 		word-wrap: break-word;
+		overflow-wrap: anywhere;
 	}
 	p {
 		margin: 0 0 $default_paragraph_spacing 0;
@@ -289,6 +294,16 @@ a img {
 				font-weight: bold;
 				margin: 0;
 				padding: 0;
+				.error_count {
+					display: inline-block;
+					margin-left: 6px;
+					border-radius: 4px;
+					padding: 2px 6px;
+					font-size: 12px;
+					line-height: 12px;
+					background: #f44336;
+					color: #ffffff;
+				}
 			}
 		}
 		.debug_page_collapse {

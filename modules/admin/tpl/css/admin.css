@@ -356,11 +356,15 @@ body>.x,
 	color: #fff;
 }
 .x .x_modal-header>.close_window {
-	font-size: 20px;
+	font-size: 24px;
+	line-height: 30px;
 	font-weight: bold;
 	text-decoration: none;
 	color: #fff;
-	opacity: 0.5;
+	opacity: 0.6;
+}
+.x .x_modal-header>.close_window:hover {
+	opacity: 0.8;
 }
 .x .x_modal-body {
 	overflow-y: visible;
@@ -1472,6 +1476,20 @@ margin-bottom: 10px;
 }
 
 }
+
+.x .g11n.x_input-append {
+	display: inline-flex;
+	align-items: flex-start;
+}
+.x .g11n.x_full-width {
+	width: 100%;
+}
+.x .g11n > input.lang_code,
+.x .g11n > textarea.lang_code {
+	flex: 1;
+	width: unset;
+	min-width: 0;
+}
 .x .g11n>.x_add-on {
 	font-size: 0;
 	position: relative;
@@ -1488,8 +1506,9 @@ margin-bottom: 10px;
 }
 .x .g11n>.x_add-on.remover {
 	display: none;
-	width: 26px;
-	height: 26px;
+	height: 16px;
+	padding: 4px;
+	box-sizing: content-box;
 }
 .x .g11n.active>[disabled] {
 	padding-left: 25px;
@@ -1497,7 +1516,7 @@ margin-bottom: 10px;
 	background-repeat: no-repeat;
 }
 .x .g11n.active>.x_add-on.remover {
-	display: inline-block;
+	display: block;
 }
 .x .g11n>.x_add-on:hover>i {
 	opacity: 1;
@@ -1690,14 +1709,16 @@ html[lang="id"] .x .g11n.active>[disabled],
 }
 .x .uDrag .dragBtn {
 	position: absolute;
-	width: 8px;
+	width: 24px;
 	height: 100%;
-	padding: 0;
+	box-sizing: content-box;
 	overflow: hidden;
-	background: url(../img/bgDragable.gif);
+	background: url(../img/bgDragable.png);
+	background-position: center top;
+	background-repeat: no-repeat;
 	top: 1px;
-	left: 0;
-	text-indent: 12px;
+	left: -8px;
+	text-indent: 20px;
 	border: 0;
 	cursor: n-resize;
 	white-space: nowrap;

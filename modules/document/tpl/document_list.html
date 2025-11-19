@@ -50,11 +50,18 @@ xe.lang.msg_empty_search_keyword = '{$lang->msg_empty_search_keyword}';
 			<tr loop="$document_list => $no, $oDocument">
 
 				<td class="title">
-				<a href="{$oDocument->getPermanentUrl()}" target="_blank"><!--@if(trim($oDocument->getTitleText()) !== '')-->{escape($oDocument->getTitleText(), false)}<!--@else--><em>{$lang->no_title_document}</em><!--@end--></a>
-
-				<span cond="isset($module_list[$oDocument->get('module_srl')])">
-					- <a href="{getUrl('', 'mid', $module_list[$oDocument->get('module_srl')]->mid)}" target="_blank">{$module_list[$oDocument->get('module_srl')]->browser_title}</a>
-				</span></td>
+					<!--@if(isset($module_list[$oDocument->get('module_srl')]))-->
+						<!--@if($module_list[$oDocument->get('module_srl')]->domain_srl == -1 || $module_list[$oDocument->get('module_srl')]->domain_srl == $site_module_info->domain_srl)-->
+							<a href="{$oDocument->getPermanentUrl()}" target="_blank"><!--@if(trim($oDocument->getTitleText()) !== '')-->{escape($oDocument->getTitleText(), false)}<!--@else--><em>{$lang->no_title_document}</em><!--@end--></a>
+							- <a href="{getUrl('', 'mid', $module_list[$oDocument->get('module_srl')]->mid)}" target="_blank">{$module_list[$oDocument->get('module_srl')]->browser_title}</a>
+						<!--@else-->
+							<a href="{ModuleModel::getDomainByModuleSrl($oDocument->get('module_srl'))}{getUrl('', 'mid', $module_list[$oDocument->get('module_srl')]->mid, 'document_srl', $oDocument->document_srl)}" target="_blank"><!--@if(trim($oDocument->getTitleText()) !== '')-->{escape($oDocument->getTitleText(), false)}<!--@else--><em>{$lang->no_title_document}</em><!--@end--></a>
+							- <a href="{ModuleModel::getDomainByModuleSrl($oDocument->get('module_srl'))}{getUrl('', 'mid', $module_list[$oDocument->get('module_srl')]->mid)}" target="_blank">{$module_list[$oDocument->get('module_srl')]->browser_title}</a>
+						<!--@endif-->
+					<!--@else-->
+						<a href="{$oDocument->getPermanentUrl()}" target="_blank"><!--@if(trim($oDocument->getTitleText()) !== '')-->{escape($oDocument->getTitleText(), false)}<!--@else--><em>{$lang->no_title_document}</em><!--@end--></a>
+					<!--@endif-->
+				</td>
 				<td class="nowr">
 					<span cond="$oDocument->get('member_srl') <= 0">{$oDocument->getNickName()}</span>
 					<a href="#popup_menu_area" class="member_{abs($oDocument->get('member_srl'))}" cond="$oDocument->get('member_srl') < 0">({$member_nick_name[abs($oDocument->get('member_srl'))]})</a>
@@ -120,8 +127,13 @@ xe.lang.msg_empty_search_keyword = '{$lang->msg_empty_search_keyword}';
 <form action="./" method="get" class="search center x_input-append x_clearfix">
 	<input type="hidden" name="module" value="{$module}" />
 	<input type="hidden" name="act" value="{$act}" />
-	<input type="hidden" name="module_srl" value="{$module_srl}" />
 	<input type="hidden" name="error_return_url" value="" />
+	<select name="module_srl" style="margin-right:4px">
+		<option value="">{lang('all')}</option>
+		<!--@foreach($module_list as $item)-->
+			<option value="{$item->module_srl}" <!--@if(isset($module_srl) && $module_srl == $item->module_srl)-->selected="selected"<!--@end-->>{$item->browser_title}</option>
+		<!--@endforeach-->
+	</select>
 	<select name="search_target" title="{$lang->search_target}" style="margin-right:4px">
 		<!--@foreach(lang('document.search_target_list') as $key => $val)-->
 		<option value="{$key}" <!--@if($search_target==$key)-->selected="selected"<!--@end-->>{$val}</option>

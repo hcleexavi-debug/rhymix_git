@@ -634,10 +634,12 @@ class DocumentItem extends BaseObject
 		$content = trim(utf8_normalize_spaces(html_entity_decode(strip_tags($content))));
 		if($strlen)
 		{
-			$content = cut_str($content, $strlen, '...');
+			return escape(cut_str($content, $strlen, '...'), false);
 		}
-
-		return escape($content);
+		else
+		{
+			return escape($content);
+		}
 	}
 
 	function getContentText($strlen = 0)
@@ -653,17 +655,22 @@ class DocumentItem extends BaseObject
 		}
 
 		$content = preg_replace('!(</p>|</div>|<br)!i', ' $1', $this->get('content'));
-		$content = preg_replace_callback('/<(object|param|embed)[^>]*/is', array($this, '_checkAllowScriptAccess'), $content);
-		$content = preg_replace_callback('/<object[^>]*>/is', array($this, '_addAllowScriptAccess'), $content);
+		//$content = preg_replace_callback('/<(object|param|embed)[^>]*/is', array($this, '_checkAllowScriptAccess'), $content);
+		//$content = preg_replace_callback('/<object[^>]*>/is', array($this, '_addAllowScriptAccess'), $content);
 		if($strlen)
 		{
 			$content = trim(utf8_normalize_spaces(html_entity_decode(strip_tags($content))));
-			$content = cut_str($content, $strlen, '...');
+			return escape(cut_str($content, $strlen, '...'), false);
 		}
-
-		return escape($content);
+		else
+		{
+			return escape($content);
+		}
 	}
 
+	/**
+	 * @deprecated
+	 */
 	function _addAllowScriptAccess($m)
 	{
 		if($this->allowscriptaccessList[$this->allowscriptaccessKey] == 1)
@@ -674,6 +681,9 @@ class DocumentItem extends BaseObject
 		return $m[0];
 	}
 
+	/**
+	 * @deprecated
+	 */
 	function _checkAllowScriptAccess($m)
 	{
 		if($m[1] == 'object')
@@ -806,8 +816,7 @@ class DocumentItem extends BaseObject
 
 		// Truncate string
 		$content = cut_str($content, $str_size, $tail);
-
-		return escape($content);
+		return escape($content, false);
 	}
 
 	function getRegdate($format = 'Y.m.d H:i:s', $conversion = true)
@@ -1146,9 +1155,14 @@ class DocumentItem extends BaseObject
 
 		// Call trigger for custom thumbnails.
 		$trigger_obj = (object)[
-			'document_srl' => $this->document_srl, 'width' => $width, 'height' => $height,
-			'image_type' => 'jpg', 'type' => $thumbnail_type, 'quality' => $config->thumbnail_quality,
-			'filename' => $thumbnail_file, 'url' => $thumbnail_url,
+			'document_srl' => $this->document_srl,
+			'width' => $width,
+			'height' => $height,
+			'image_type' => 'jpg',
+			'type' => $thumbnail_type,
+			'quality' => $config->thumbnail_quality,
+			'filename' => $thumbnail_file,
+			'url' => $thumbnail_url,
 		];
 		$output = ModuleHandler::triggerCall('document.getThumbnail', 'before', $trigger_obj);
 		clearstatcache(true, $thumbnail_file);
@@ -1220,8 +1234,16 @@ class DocumentItem extends BaseObject
 		// If not exists, file an image file from the content
 		if(!$source_file && $config->thumbnail_target !== 'attachment')
 		{
-			$external_image_min_width = min(100, round($trigger_obj->width * 0.3));
-			$external_image_min_height = min(100, round($trigger_obj->height * 0.3));
+			$external_image_min_width = is_numeric($trigger_obj->width) ? min(100, round(intval($trigger_obj->width) * 0.3)) : 100;
+			if($trigger_obj->height === 'auto')
+			{
+				$external_image_min_height = min(100, $external_image_min_width * 0.5);
+			}
+			else
+			{
+				$external_image_min_height = is_numeric($trigger_obj->height) ? min(100, round(intval($trigger_obj->height) * 0.3)) : 100;
+			}
+
 			preg_match_all("!<img\s[^>]*?src=(\"|')([^\"' ]*?)(\"|')!is", $content, $matches, PREG_SET_ORDER);
 			foreach($matches as $match)
 			{

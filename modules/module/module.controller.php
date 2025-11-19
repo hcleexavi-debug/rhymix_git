@@ -443,6 +443,10 @@ class ModuleController extends Module
 			{
 				$oMenuAdminController = getAdminController('menu');
 				$menuSrl = $oMenuAdminController->getUnlinkedMenu();
+				if ($menuSrl instanceof BaseObject && !$menuSrl->toBool())
+				{
+					return $menuSrl;
+				}
 
 				$menuArgs->menu_srl = $menuSrl;
 				$menuArgs->menu_item_srl = getNextSequence();
@@ -656,8 +660,8 @@ class ModuleController extends Module
 		{
 			unset($args);
 			$args = new stdClass;
-			$args->menu_srl = $output->data->menu_srl;
-			$args->menu_item_srl = $output->data->menu_item_srl;
+			$args->menu_srl = $output->data->menu_srl ?: 0;
+			$args->menu_item_srl = $output->data->menu_item_srl ?: 0;
 			$args->is_force = 'N';
 
 			$oMenuAdminController = getAdminController('menu');
@@ -1264,6 +1268,62 @@ class ModuleController extends Module
 		$args = new stdClass();
 		$args->module_filebox_srl = $vars->module_filebox_srl;
 		return executeQuery('module.deleteModuleFileBox', $args);
+	}
+
+	/**
+	 * API call to clear cache entries.
+	 *
+	 * This can be used to clear the APC cache from CLI scripts,
+	 * such as async tasks run from crontab.
+	 */
+	public function procModuleClearCache()
+	{
+		// This is a JSON API.
+		Context::setResponseMethod('JSON');
+		if (PHP_SAPI === 'cli')
+		{
+			throw new Rhymix\Framework\Exceptions\InvalidRequest;
+		}
+
+		// Get cache keys to clear.
+		$keys = Context::get('keys');
+		if (!$keys)
+		{
+			throw new Rhymix\Framework\Exceptions\InvalidRequest;
+		}
+		if (!is_array($keys))
+		{
+			$keys = [$keys];
+		}
+
+		// Verify the API signature.
+		$keystring = implode('|', $keys);
+		$signature = Context::get('signature');
+		if (!$signature)
+		{
+			throw new Rhymix\Framework\Exceptions\NotPermitted;
+		}
+		if (!Rhymix\Framework\Security::verifySignature($keystring, $signature))
+		{
+			throw new Rhymix\Framework\Exceptions\NotPermitted;
+		}
+
+		// Clear the requested cache keys.
+		foreach ($keys as $key)
+		{
+			if ($key === '*')
+			{
+				Rhymix\Framework\Cache::clearAll();
+			}
+			elseif (preg_match('/^([^:]+):\*$/', $key, $matches))
+			{
+				Rhymix\Framework\Cache::clearGroup($matches[1]);
+			}
+			else
+			{
+				Rhymix\Framework\Cache::delete($key);
+			}
+		}
 	}
 
 	/**

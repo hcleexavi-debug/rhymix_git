@@ -171,8 +171,20 @@ class ModuleAdminModel extends Module
 		$grant_list->manager->title = lang('grant_manager');
 		$grant_list->manager->default = 'manager';
 		Context::set('grant_list', $grant_list);
+
 		// Get a permission group granted to the current module
+		$selected_group = array();
+		$default_xml_grant = array();
 		$default_grant = array();
+		foreach ($grant_list as $key => $val)
+		{
+			if (!empty($val->default))
+			{
+				$default_xml_grant[$key] = $val->default;
+				$default_grant[$key] = $val->default;
+			}
+		}
+
 		$args = new stdClass();
 		$args->module_srl = $module_srl;
 		$output = executeQueryArray('module.getModuleGrants', $args);
@@ -182,7 +194,8 @@ class ModuleAdminModel extends Module
 			{
 				if($val->group_srl == 0) $default_grant[$val->name] = 'all';
 				else if($val->group_srl == -1) $default_grant[$val->name] = 'member';
-				else if($val->group_srl == -2) $default_grant[$val->name] = 'site';
+				else if($val->group_srl == -2) $default_grant[$val->name] = 'member';
+				else if($val->group_srl == -4) $default_grant[$val->name] = 'not_member';
 				else if($val->group_srl == -3) $default_grant[$val->name] = 'manager';
 				else
 				{
@@ -192,6 +205,7 @@ class ModuleAdminModel extends Module
 			}
 		}
 		Context::set('selected_group', $selected_group);
+		Context::set('default_xml_grant', $default_xml_grant);
 		Context::set('default_grant', $default_grant);
 		Context::set('module_srl', $module_srl);
 		// Extract admin ID set in the current module
@@ -260,7 +274,8 @@ class ModuleAdminModel extends Module
 			{
 				if($val->group_srl == 0) $defaultGrant->{$val->name} = 'all';
 				else if($val->group_srl == -1) $defaultGrant->{$val->name} = 'member';
-				else if($val->group_srl == -2) $defaultGrant->{$val->name} = 'site';
+				else if($val->group_srl == -2) $defaultGrant->{$val->name} = 'member';
+				else if($val->group_srl == -4) $defaultGrant->{$val->name} = 'not_member';
 				else if($val->group_srl == -3) $defaultGrant->{$val->name} = 'manager';
 				else
 				{
@@ -373,21 +388,24 @@ class ModuleAdminModel extends Module
 			$skin_vars = $oModuleModel->getModuleMobileSkinVars($module_srl);
 		}
 
-		if($skin_info->extra_vars)
+		if($skin_info && $skin_info->extra_vars)
 		{
 			foreach($skin_info->extra_vars as $key => $val)
 			{
 				$group = $val->group;
 				$name = $val->name;
 				$type = $val->type;
-				if($skin_vars[$name])
+				if (isset($skin_vars[$name]) && $skin_vars[$name])
 				{
 					$value = $skin_vars[$name]->value;
 				}
-				else $value = '';
-				if($type=="checkbox")
+				else
 				{
-					$value = $value?unserialize($value):array();
+					$value = '';
+				}
+				if ($type === 'checkbox')
+				{
+					$value = $value ? unserialize($value) : [];
 				}
 
 				$value = empty($value) ? $val->default : $value;

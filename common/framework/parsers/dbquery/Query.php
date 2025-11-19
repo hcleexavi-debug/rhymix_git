@@ -222,6 +222,14 @@ class Query extends VariableBase
 			$columns = array();
 			foreach ($this->groupby->columns as $column_name)
 			{
+				if (is_array($column_name))
+				{
+					list($column_name, $ifvar) = $column_name;
+					if ($ifvar && empty($this->_args[$ifvar]))
+					{
+						continue;
+					}
+				}
 				if (self::isValidColumnName($column_name))
 				{
 					$columns[] = self::quoteName($column_name);
@@ -580,6 +588,10 @@ class Query extends VariableBase
 				{
 					$result .= ($result === '' ? '' : (' ' . $condition->pipe . ' ')) . '(' . $condition_string . ')';
 				}
+				elseif ($condition->not_null)
+				{
+					throw new \Rhymix\Framework\Exceptions\QueryError('Condition group marked as NOT NULL must contain at least one valid condition');
+				}
 			}
 
 			// Simple condition
@@ -734,10 +746,11 @@ class Query extends VariableBase
 	 */
 	public static function quoteName(string $column_name): string
 	{
-		return preg_replace_callback('/[a-z][a-z0-9_.*]*(?!\\()\b/i', function($m) {
+		$exceptions = ['*' => true, 'DISTINCT' => true, 'distinct' => true];
+		return preg_replace_callback('/[a-z][a-z0-9_.*]*(?!\\()\b/i', function($m) use($exceptions) {
 			$columns = explode('.', $m[0]);
-			$columns = array_map(function($str) {
-				return $str === '*' ? $str : ('`' . $str . '`');
+			$columns = array_map(function($str) use($exceptions) {
+				return isset($exceptions[$str]) ? $str : ('`' . $str . '`');
 			}, $columns);
 			return implode('.', $columns);
 		}, $column_name);

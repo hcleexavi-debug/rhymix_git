@@ -12,6 +12,7 @@ class ModuleModel extends Module
 	 */
 	public static $_mid_map = [];
 	public static $_module_srl_map = [];
+	public static $_domain_map = [];
 
 	/**
 	 * @brief Initialization
@@ -424,14 +425,14 @@ class ModuleModel extends Module
 	 *
 	 * @param stdClass $moduleInfo Module information
 	 */
-	private static function _applyDefaultSkin(&$module_info)
+	private static function _applyDefaultSkin($module_info)
 	{
-		if($module_info->is_skin_fix == 'N')
+		if(isset($module_info->is_skin_fix) && $module_info->is_skin_fix == 'N')
 		{
 			$module_info->skin = '/USE_DEFAULT/';
 		}
 
-		if($module_info->is_mskin_fix == 'N' && $module_info->mskin !== '/USE_RESPONSIVE/')
+		if(isset($module_info->is_mskin_fix) && $module_info->is_mskin_fix == 'N' && $module_info->mskin !== '/USE_RESPONSIVE/')
 		{
 			$module_info->mskin = '/USE_DEFAULT/';
 		}
@@ -529,6 +530,10 @@ class ModuleModel extends Module
 
 		foreach($target_module_info as $key => $val)
 		{
+			if (!isset($val->module_srl) || !$val->module_srl)
+			{
+				continue;
+			}
 			if (!isset($extra_vars[$val->module_srl]))
 			{
 				continue;
@@ -704,17 +709,71 @@ class ModuleModel extends Module
 		$mid = Rhymix\Framework\Cache::get('site_and_module:module_srl_mid:' . $module_srl);
 		if (isset($mid))
 		{
-			return $mid;
+			return self::$_module_srl_map[$module_srl] = $mid;
 		}
 
 		$args = new stdClass;
 		$args->module_srls = $module_srl;
 		$output = executeQuery('module.getModuleInfoByModuleSrl', $args, ['mid']);
-		if ($output->data)
+		if (is_object($output->data))
 		{
 			$mid = self::$_module_srl_map[$module_srl] = $output->data->mid;
 			Rhymix\Framework\Cache::set('site_and_module:module_srl_mid:' . $module_srl, $mid, 0, true);
 			return $mid;
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	/**
+	 * Return the domain (including scheme and port) by module_srl
+	 *
+	 * @param int $module_srl
+	 * @return ?string
+	 */
+	public static function getDomainByModuleSrl(int $module_srl): ?string
+	{
+		$module_srl = intval($module_srl);
+		if (isset(self::$_domain_map[$module_srl]))
+		{
+			return self::$_domain_map[$module_srl];
+		}
+
+		$prefix = Rhymix\Framework\Cache::get('site_and_module:module_srl_prefix:' . $module_srl);
+		if (isset($prefix))
+		{
+			self::$_domain_map[$module_srl] = $prefix;
+			return $prefix;
+		}
+
+		$args = new stdClass;
+		$args->module_srls = $module_srl;
+		$args->include_domain_info = true;
+		$output = executeQuery('module.getModuleInfoByModuleSrl', $args);
+		if (is_object($output->data))
+		{
+			$info = self::$_module_srl_map[$module_srl] = $output->data;
+			if (!$info->domain_srl || $info->domain_srl == -1 || !isset($info->domain))
+			{
+				$prefix = '';
+			}
+			else
+			{
+				$prefix = $info->security === 'always' ? 'https://' : 'http://';
+				$prefix .= $info->domain;
+				if ($info->security === 'always' && $info->https_port)
+				{
+					$prefix .= ':' . $info->https_port;
+				}
+				if ($info->security !== 'always' && $info->http_port)
+				{
+					$prefix .= ':' . $info->http_port;
+				}
+			}
+			Rhymix\Framework\Cache::set('site_and_module:module_srl_prefix:' . $module_srl, $prefix, 0, true);
+			return $prefix;
 		}
 		else
 		{
@@ -1019,246 +1078,23 @@ class ModuleModel extends Module
 	public static function loadSkinInfo($path, $skin, $dir = 'skins')
 	{
 		// Read xml file having skin information
-		if(substr($path,-1)!='/') $path .= '/';
-		if(!preg_match('/^[a-zA-Z0-9_-]+$/', $skin ?? ''))
+		if (!str_ends_with($path, '/'))
+		{
+			$path .= '/';
+		}
+		if (!preg_match('/^[a-zA-Z0-9_-]+$/', $skin ?? ''))
 		{
 			return;
 		}
-		$skin_xml_file = sprintf("%s%s/%s/skin.xml", $path, $dir, $skin);
-		if(!file_exists($skin_xml_file))
+
+		$skin_path = sprintf("%s%s/%s/", $path, $dir, $skin);
+		$skin_xml_file = $skin_path . 'skin.xml';
+		if (!file_exists($skin_xml_file))
 		{
 			return;
 		}
 
-		// Create XmlParser object
-		$oXmlParser = new XeXmlParser();
-		$_xml_obj = $oXmlParser->loadXmlFile($skin_xml_file);
-		// Return if no skin information is
-		if(!$_xml_obj->skin) return;
-		$xml_obj = $_xml_obj->skin;
-		// Skin Name
-		$skin_info = new stdClass();
-		$skin_info->title = $xml_obj->title->body;
-		$skin_info->author = array();
-		$skin_info->extra_vars = array();
-		$skin_info->colorset = array();
-		// Author information
-		if($xml_obj->version && $xml_obj->attrs->version == '0.2')
-		{
-			// skin format v0.2
-			$date_obj = (object)array('y' => 0, 'm' => 0, 'd' => 0);
-			sscanf($xml_obj->date->body ?? null, '%d-%d-%d', $date_obj->y, $date_obj->m, $date_obj->d);
-			$skin_info->version = $xml_obj->version->body ?? null;
-			$skin_info->date = sprintf('%04d%02d%02d', $date_obj->y, $date_obj->m, $date_obj->d);
-			$skin_info->homepage = $xml_obj->link->body ?? null;
-			$skin_info->license = $xml_obj->license->body ?? null;
-			$skin_info->license_link = $xml_obj->license->attrs->link ?? null;
-			$skin_info->description = $xml_obj->description->body ?? null;
-
-			if(!is_array($xml_obj->author ?? null)) $author_list = array($xml_obj->author);
-			else $author_list = $xml_obj->author;
-
-			foreach($author_list as $author)
-			{
-				$author_obj = new stdClass();
-				$author_obj->name = $author->name->body ?? null;
-				$author_obj->email_address = $author->attrs->email_address ?? null;
-				$author_obj->homepage = $author->attrs->link ?? null;
-				$skin_info->author[] = $author_obj;
-			}
-			// List extra vars
-			if($xml_obj->extra_vars)
-			{
-				$extra_var_groups = $xml_obj->extra_vars->group;
-				if(!$extra_var_groups) $extra_var_groups = $xml_obj->extra_vars;
-				if(!is_array($extra_var_groups)) $extra_var_groups = array($extra_var_groups);
-
-				foreach($extra_var_groups as $group)
-				{
-					$extra_vars = $group->var;
-					if(!$extra_vars)
-					{
-						continue;
-					}
-
-					if(!is_array($group->var))
-					{
-						$extra_vars = array($group->var);
-					}
-
-					foreach($extra_vars as $key => $val)
-					{
-						$obj = new stdClass;
-						$obj->group = $group->title->body ?? null;
-						$obj->name = $val->attrs->name ?? null;
-						$obj->title = $val->title->body ?? null;
-						$obj->type = ($val->attrs->type ?? null) ?: 'text';
-						$obj->description = $val->description->body ?? null;
-						$obj->value = $val->attrs->value ?? null;
-						$obj->default = $val->attrs->default ?? null;
-
-						if(preg_match('/,|\|@\|/', $obj->value ?? '', $delimiter) && $delimiter[0])
-						{
-							$obj->value = explode($delimiter[0], $obj->value);
-						}
-						if($obj->type == 'mid_list' && !is_array($obj->value))
-						{
-							$obj->value = array($obj->value);
-						}
-
-						// Get an option list from 'select'type
-						if(is_array($val->options))
-						{
-							$option_count = count($val->options);
-
-							for($i = 0; $i < $option_count; $i++)
-							{
-								$obj->options[$i] = new stdClass();
-								$obj->options[$i]->title = $val->options[$i]->title->body ?? null;
-								$obj->options[$i]->value = $val->options[$i]->attrs->value ?? null;
-							}
-						}
-						else
-						{
-							$obj->options[0] = new stdClass();
-							$obj->options[0]->title = $val->options->title->body ?? null;
-							$obj->options[0]->value = $val->options->attrs->value ?? null;
-						}
-
-						$skin_info->extra_vars[] = $obj;
-					}
-				}
-			}
-		}
-		else
-		{
-			// skin format v0.1
-			$date_obj = (object)array('y' => 0, 'm' => 0, 'd' => 0);
-			if (isset($xml_obj->maker->attrs->date))
-			{
-				sscanf($xml_obj->maker->attrs->date, '%d-%d-%d', $date_obj->y, $date_obj->m, $date_obj->d);
-			}
-
-			$skin_info->version = $xml_obj->version->body ?? null;
-			$skin_info->date = sprintf('%04d%02d%02d', $date_obj->y, $date_obj->m, $date_obj->d);
-			$skin_info->homepage = $xml_obj->link->body ?? null;
-			$skin_info->license = $xml_obj->license->body ?? null;
-			$skin_info->license_link = $xml_obj->license->attrs->link ?? null;
-			$skin_info->description = $xml_obj->maker->description->body ?? null;
-
-			$skin_info->author[0] = new stdClass();
-			$skin_info->author[0]->name = $xml_obj->maker->name->body ?? null;
-			$skin_info->author[0]->email_address = $xml_obj->maker->attrs->email_address ?? null;
-			$skin_info->author[0]->homepage = $xml_obj->maker->attrs->link ?? null;
-			// Variables used in the skin
-			$extra_var_groups = $xml_obj->extra_vars->group ?? null;
-			if(!$extra_var_groups) $extra_var_groups = $xml_obj->extra_vars ?? null;
-			if(!is_array($extra_var_groups)) $extra_var_groups = array($extra_var_groups);
-
-			foreach($extra_var_groups as $group)
-			{
-				$extra_vars = $group->var ?? null;
-
-				if($extra_vars)
-				{
-					if(!is_array($extra_vars)) $extra_vars = array($extra_vars);
-
-					foreach($extra_vars as $var)
-					{
-						$options = array();
-
-						$group = $group->title->body;
-						$name = $var->attrs->name;
-						$type = $var->attrs->type;
-						$title = $var->title->body;
-						$description = $var->description->body;
-						// Get an option list from 'select'type.
-						if(is_array($var->default))
-						{
-							$option_count = count($var->default);
-
-							for($i = 0; $i < $option_count; $i++)
-							{
-								$options[$i] = new stdClass();
-								$options[$i]->title = $var->default[$i]->body;
-								$options[$i]->value = $var->default[$i]->body;
-							}
-						}
-						else
-						{
-							$options[0] = new stdClass();
-							$options[0]->title = $var->default->body;
-							$options[0]->value = $var->default->body;
-						}
-
-						$width = $var->attrs->width;
-						$height = $var->attrs->height;
-
-						$obj = new stdClass();
-						$obj->group = $group;
-						$obj->title = $title;
-						$obj->description = $description;
-						$obj->name = $name;
-						$obj->type = $type;
-						$obj->options = $options;
-						$obj->width = $width;
-						$obj->height = $height;
-						$obj->default = $options[0]->value;
-
-						$skin_info->extra_vars[] = $obj;
-					}
-				}
-			}
-		}
-
-		// colorset
-		$colorset = $xml_obj->colorset->color ?? null;
-		if($colorset)
-		{
-			if(!is_array($colorset)) $colorset = array($colorset);
-
-			foreach($colorset as $color)
-			{
-				$name = $color->attrs->name;
-				$title = $color->title->body;
-				$screenshot = $color->attrs->src;
-				if($screenshot)
-				{
-					$screenshot = sprintf("%s%s/%s/%s", $path, $dir, $skin, $screenshot);
-					if(!file_exists($screenshot)) $screenshot = "";
-				}
-				else $screenshot = "";
-
-				$obj = new stdClass();
-				$obj->name = $name;
-				$obj->title = $title;
-				$obj->screenshot = $screenshot;
-				$skin_info->colorset[] = $obj;
-			}
-		}
-		// Menu type (settings for layout)
-		if($xml_obj->menus->menu ?? null)
-		{
-			$menus = $xml_obj->menus->menu;
-			if(!is_array($menus)) $menus = array($menus);
-
-			$menu_count = count($menus);
-			$skin_info->menu_count = $menu_count;
-			for($i=0;$i<$menu_count;$i++)
-			{
-				unset($obj);
-
-				$obj->name = $menus[$i]->attrs->name;
-				if($menus[$i]->attrs->default == "true") $obj->default = true;
-				$obj->title = $menus[$i]->title->body;
-				$obj->maxdepth = $menus[$i]->maxdepth->body;
-
-				$skin_info->menu->{$obj->name} = $obj;
-			}
-		}
-
-		$thumbnail = sprintf("%s%s/%s/thumbnail.png", $path, $dir, $skin);
-		$skin_info->thumbnail = (file_exists($thumbnail))?$thumbnail:null;
+		$skin_info = Rhymix\Framework\Parsers\SkinInfoParser::loadXML($skin_xml_file, $skin, $skin_path);
 		return $skin_info;
 	}
 
@@ -2187,7 +2023,7 @@ class ModuleModel extends Module
 	 */
 	public static function getGrant($module_info, $member_info, $xml_info = null)
 	{
-		if(empty($module_info->module))
+		if (empty($module_info->module))
 		{
 			$module_info = new stdClass;
 			$module_info->module = $module_info->module_srl = 0;
@@ -2202,148 +2038,16 @@ class ModuleModel extends Module
 			}
 		}
 
-		// Get information of module.xml
-		if(!$xml_info)
+		// Get module grant information
+		if (!$xml_info)
 		{
 			$xml_info = self::getModuleActionXml($module_info->module);
 		}
+
+		// Generate grant
 		$xml_grant_list = isset($xml_info->grant) ? (array)$xml_info->grant : array();
-
-		// Get group information of member
-		$member_group = !empty($member_info->group_list) ? array_keys($member_info->group_list) : array();
-		$is_module_admin = !empty($module_info->module_srl) ? self::isModuleAdmin($member_info, $module_info->module_srl) : false;
-
-		// Get 'privilege name' list from module.xml
-		$privilege_list = array_keys($xml_grant_list);
-
-		// Prepend default 'privilege name'
-		// manager, is_site_admin not distinguish because of compatibility.
-		array_unshift($privilege_list, 'access', 'is_admin', 'manager', 'is_site_admin', 'root');
-
-		// Unique
-		$privilege_list = array_unique($privilege_list, SORT_STRING);
-
-		// Grant first
-		$grant = new Rhymix\Modules\Module\Models\Permission;
-		foreach($privilege_list as $val)
-		{
-			// If an administrator, grant all
-			if($member_info && $member_info->is_admin == 'Y')
-			{
-				$grant->{$val} = true;
-			}
-			// If a module manager, grant all (except 'root', 'is_admin')
-			elseif ($is_module_admin && $val !== 'root' && $val !== 'is_admin')
-			{
-				$grant->{$val} = true;
-			}
-			// If module_srl doesn't exist, grant access
-			else if(empty($module_info->module_srl) && $val === 'access')
-			{
-				$grant->{$val} = true;
-			}
-			// Default : not grant
-			else
-			{
-				$grant->{$val} = false;
-			}
-		}
-
-		// If module admin, add scopes
-		if ($member_info && $member_info->is_admin == 'Y')
-		{
-			$grant->scopes = true;
-		}
-		elseif ($is_module_admin)
-		{
-			$grant->scopes = $is_module_admin;
-		}
-		else
-		{
-			$grant->scopes = [];
-		}
-
-		// If access were not granted, check more
-		if(!$grant->access)
-		{
-			$checked = array();
-
-			// Grant privileges by information that get from the DB
-			foreach(self::getModuleGrants($module_info->module_srl)->data as $val)
-			{
-				$checked[$val->name] = true;
-				if($grant->{$val->name})
-				{
-					continue;
-				}
-
-				// All user
-				if($val->group_srl == 0)
-				{
-					$grant->{$val->name} = true;
-					continue;
-				}
-
-				// Log-in member only
-				if($member_info && $member_info->member_srl)
-				{
-					if($val->group_srl == -1 || $val->group_srl == -2)
-					{
-						$grant->{$val->name} = true;
-					}
-					// Manager only
-					else if($val->group_srl == -3)
-					{
-						if($grant->manager)
-						{
-							$grant->{$val->name} = true;
-						}
-					}
-					// If a target is a group
-					else if(count($member_group) && in_array($val->group_srl, $member_group))
-					{
-						$grant->{$val->name} = true;
-						if ($val->name === 'manager' && !$grant->scopes)
-						{
-							$grant->scopes = true;
-						}
-					}
-				}
-			}
-
-			// Grant access by default
-			if(!isset($checked['access']))
-			{
-				$grant->access = true;
-			}
-
-			// Grant privileges by default information of module
-			foreach($xml_grant_list as $name => $item)
-			{
-				if(isset($checked[$name]) || $grant->{$name})
-				{
-					continue;
-				}
-
-				// All user
-				if($item->default == 'guest')
-				{
-					$grant->{$name} = true;
-
-					continue;
-				}
-
-				// Log-in member only
-				if($member_info && $member_info->member_srl)
-				{
-					if($item->default == 'member' || $item->default == 'site')
-					{
-						$grant->{$name} = true;
-					}
-				}
-			}
-		}
-
+		$module_grants = self::getModuleGrants($module_info->module_srl ?? 0)->data ?: [];
+		$grant = new Rhymix\Modules\Module\Models\Permission($xml_grant_list, $module_grants, $module_info, $member_info ?: null);
 		return $__cache = $grant;
 	}
 
@@ -2554,8 +2258,7 @@ class ModuleModel extends Module
 			$param = explode("=",$param);
 			if($param[0] == 'selected_widget') $selected_widget = $param[1];
 		}
-		$oWidgetModel = getModel('widget');
-		if($selected_widget) $widget_info = $oWidgetModel->getWidgetInfo($selected_widget);
+		if($selected_widget) $widget_info = WidgetModel::getWidgetInfo($selected_widget);
 		Context::set('allow_multiple', $widget_info->extra_var->images->allow_multiple);
 
 		$output = self::getModuleFileBoxList();

@@ -368,20 +368,17 @@ class Template
 			$content = $this->parse();
 			if (!Storage::write($this->cache_path, $content))
 			{
-				throw new Exception('Cannot write template cache file: ' . $this->cache_path);
+				if (!Storage::write($this->cache_path, $content))
+				{
+					throw new Exception('Cannot write template cache file: ' . $this->cache_path);
+				}
 			}
 		}
 
 		$output = $this->execute();
 
 		// Record the time elapsed.
-		$elapsed_time = microtime(true) - $start;
-		if (!isset($GLOBALS['__template_elapsed__']))
-		{
-			$GLOBALS['__template_elapsed__'] = 0;
-		}
-		$GLOBALS['__template_elapsed__'] += $elapsed_time;
-
+		Debug::addTime('template', microtime(true) - $start);
 		return $output;
 	}
 

@@ -232,6 +232,7 @@ function getNextSequence(): int
 /**
  * Set Sequence number to session
  *
+ * @deprecated
  * @param int $seq sequence number
  * @return void
  */
@@ -243,11 +244,16 @@ function setUserSequence($seq): void
 	}
 	$seq = intval($seq);
 	$_SESSION['seq'][$seq] = $seq;
+	if (count($_SESSION['seq']) > 1000)
+	{
+		$_SESSION['seq'] = array_slice($_SESSION['seq'], 600, null, true);
+	}
 }
 
 /**
  * Check Sequence number grant
  *
+ * @deprecated
  * @param int $seq sequence number
  * @return bool
  */
@@ -313,6 +319,7 @@ function getNotEncodedUrl(): string
 /**
  * Get a encoded url. If url is encoded, not encode. Otherwise html encode the url.
  *
+ * @deprecated
  * @see getUrl()
  * @return string
  */
@@ -386,6 +393,7 @@ function getNotEncodedFullUrl(): string
  * getSiteUrl() returns the URL by transforming the given argument value of domain
  * The first argument should consist of domain("http://" not included) and path
  *
+ * @deprecated
  * @return string
  */
 function getSiteUrl(): string
@@ -408,6 +416,7 @@ function getSiteUrl(): string
  * getSiteUrl() returns the not encoded URL by transforming the given argument value of domain
  * The first argument should consist of domain("http://" not included) and path
  *
+ * @deprecated
  * @return string
  */
 function getNotEncodedSiteUrl(): string
@@ -429,6 +438,7 @@ function getNotEncodedSiteUrl(): string
 /**
  * Return the value adding request uri to the getSiteUrl() To get the full url
  *
+ * @deprecated
  * @return string
  */
 function getFullSiteUrl(): string
@@ -468,6 +478,7 @@ function getCurrentPageUrl($escape = true): string
 /**
  * Return if domain of the virtual site is url type or id type
  *
+ * @deprecated
  * @param string $domain
  * @return bool
  */
@@ -496,7 +507,7 @@ function cut_str($string, $cut_size = 0, $tail = '...'): string
 	{
 		$GLOBALS['use_mb_strimwidth'] = TRUE;
 		$string = html_entity_decode($string);
-		return escape(mb_strimwidth($string, 0, $cut_size + 4, $tail, 'utf-8'));
+		return escape(mb_strimwidth($string, 0, $cut_size + 4, $tail, 'utf-8'), false);
 	}
 
 	$chars = array(12, 4, 3, 5, 7, 7, 11, 8, 4, 5, 5, 6, 6, 4, 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 4, 8, 6, 8, 6, 10, 8, 8, 9, 8, 8, 7, 9, 8, 3, 6, 7, 7, 11, 8, 9, 8, 9, 8, 8, 7, 8, 8, 10, 8, 8, 8, 6, 11, 6, 6, 6, 4, 7, 7, 7, 7, 7, 3, 7, 7, 3, 3, 6, 3, 9, 7, 7, 7, 7, 4, 7, 3, 7, 6, 10, 6, 6, 7, 6, 6, 6, 9);
@@ -540,6 +551,7 @@ function cut_str($string, $cut_size = 0, $tail = '...'): string
 /**
  * Convert XE legacy time zone format into UTC offset.
  *
+ * @deprecated
  * @param string $time_zone Time zone in '+0900' format
  * @return int
  */
@@ -551,6 +563,7 @@ function get_time_zone_offset($timezone): int
 /**
  * Get the offset between the current user's time zone and Rhymix's internal time zone.
  *
+ * @param ?int $timestamp (optional)
  * @return int
  */
 function zgap($timestamp = null): int
@@ -574,7 +587,7 @@ function zgap($timestamp = null): int
  */
 function ztime($str): ?int
 {
-	$len = strlen($str);
+	$len = strlen($str ?? '');
 	if (!$len)
 	{
 		return null;
@@ -771,6 +784,7 @@ function getMonthName(int $month, bool $short = true): string
 /**
  * Returns encoded value of given email address for email scraping
  *
+ * @deprecated
  * @param string $email The email
  * @return string
  */
@@ -804,6 +818,7 @@ function debugPrint($value, ...$values): void
 /**
  * Delete the second object vars from the first argument
  *
+ * @deprecated
  * @param object $target_obj An original object
  * @param object $del_obj Object vars to delete from the original object
  * @return object
@@ -826,6 +841,7 @@ function delObjectVars($target_obj, $del_obj): object
 /**
  * Delete variables that are commonly submitted but don't need to be saved.
  *
+ * @deprecated
  * @param array|object $vars
  * @return array|object
  */
@@ -871,6 +887,7 @@ function getNumberingPath($no, int $size = 3): string
 /**
  * Sanitize HTML content.
  *
+ * @deprecated
  * @param string $content Target content
  * @return string
  */
@@ -882,6 +899,7 @@ function removeHackTag($content): string
 /**
  * Get whether utf8 or not given string
  *
+ * @deprecated
  * @param string $string
  * @param bool $return_convert If set, returns converted string
  * @param bool $urldecode
@@ -909,17 +927,18 @@ function detectUTF8($string, $return_convert = FALSE, $urldecode = TRUE)
 /**
  * Get is current user crawler
  *
- * @param string $agent if set, use this value instead HTTP_USER_AGENT
+ * @param ?string $user_agent if set, use this value instead HTTP_USER_AGENT
  * @return bool
  */
-function isCrawler($agent = null): bool
+function isCrawler($user_agent = null): bool
 {
-	return Rhymix\Framework\UA::isRobot($agent);
+	return Rhymix\Framework\UA::isRobot($user_agent);
 }
 
 /**
  * Remove embed media for admin
  *
+ * @deprecated
  * @param string $content
  * @param int $writer_member_srl
  * @return void
@@ -960,6 +979,9 @@ function stripEmbedTagForAdmin(&$content, $writer_member_srl): void
 /**
  * Check for CSRF attacks
  *
+ * Use Rhymix\Framework\Security::checkCSRF() instead.
+ *
+ * @deprecated
  * @return bool
  */
 function checkCSRF(): bool
@@ -969,6 +991,8 @@ function checkCSRF(): bool
 
 /**
  * menu exposure check by isShow column
+ *
+ * @deprecated
  * @param array $menu
  * @return void
  */
@@ -994,6 +1018,7 @@ function recurciveExposureCheck(&$menu): void
 /**
  * Alias to hex2rgb()
  *
+ * @deprecated
  * @param string $hexstr
  * @return array
  */
@@ -1101,7 +1126,7 @@ if(!function_exists('mb_strlen'))
  */
 if(!function_exists('mb_strpos'))
 {
-	function mb_strpos($haystack, $needle, $offset, $charset = null)
+	function mb_strpos($haystack, $needle, $offset = 0, $charset = null)
 	{
 		if(function_exists('iconv_strpos'))
 		{
@@ -1239,6 +1264,7 @@ function reload($isOpener = FALSE): void
  * @param string $errstr
  * @param string $file
  * @param int $line
+ * @param array $context
  * @return void
  */
 function handleError($errno, $errstr, $file, $line, $context): void

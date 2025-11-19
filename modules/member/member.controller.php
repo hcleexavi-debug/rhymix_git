@@ -1824,23 +1824,13 @@ class MemberController extends Member
 		Context::set('auth_args', $args);
 
 		$memberInfo = array();
-		if(is_array($member_config->signupForm))
+		if (in_array('user_id', $member_config->identifiers))
 		{
-			$exceptForm=array('password', 'find_account_question');
-			foreach($member_config->signupForm as $form)
-			{
-				if(!in_array($form->name, $exceptForm) && $form->isDefaultForm && ($form->required || $form->mustRequired))
-				{
-					$memberInfo[$lang->{$form->name}] = $member_info->{$form->name};
-				}
-			}
+			$memberInfo[$lang->user_id] = $member_info->user_id;
 		}
-		else
+		if (in_array('email_address', $member_config->identifiers))
 		{
-			$memberInfo[$lang->user_id] = $args->user_id;
-			$memberInfo[$lang->user_name] = $args->user_name;
-			$memberInfo[$lang->nick_name] = $args->nick_name;
-			$memberInfo[$lang->email_address] = $args->email_address;
+			$memberInfo[$lang->email_address] = $member_info->email_address;
 		}
 		Context::set('memberInfo', $memberInfo);
 
@@ -2871,7 +2861,7 @@ class MemberController extends Member
 
 		$extend_form_list = MemberModel::getJoinFormlist();
 		$security = new Security($extend_form_list);
-		$security->encodeHTML('..column_title', '..description', '..default_value.');
+		$security->encodeHTML('..column_title', '..description', '..default_value', '..options.');
 		if($config->signupForm)
 		{
 			foreach($config->signupForm as $no => $formInfo)
@@ -3167,7 +3157,7 @@ class MemberController extends Member
 
 		$extend_form_list = MemberModel::getJoinFormlist();
 		$security = new Security($extend_form_list);
-		$security->encodeHTML('..column_title', '..description', '..default_value.');
+		$security->encodeHTML('..column_title', '..description', '..default_value', '..options.');
 		if($config->signupForm)
 		{
 			foreach($config->signupForm as $no => $formInfo)
@@ -4017,7 +4007,7 @@ class MemberController extends Member
 		$logged_info = Context::get('logged_info');
 		$spam_description = trim( Context::get('spam_description') );
 
-		// get member current infomation
+		// get member current information
 		$member_info = MemberModel::getMemberInfoByMemberSrl($member_srl);
 		$cnt_comment = CommentModel::getCommentCountByMemberSrl($member_srl);
 		$cnt_document = DocumentModel::getDocumentCountByMemberSrl($member_srl);

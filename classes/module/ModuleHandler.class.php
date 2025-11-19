@@ -49,7 +49,7 @@ class ModuleHandler extends Handler
 	 * prepares variables to use in moduleHandler
 	 * @param string $module name of module
 	 * @param string $act name of action
-	 * @param int $mid
+	 * @param string $mid
 	 * @param int $document_srl
 	 * @param int $module_srl
 	 * @return void
@@ -147,7 +147,20 @@ class ModuleHandler extends Handler
 						return true;
 
 					case 'display':
-						// pass
+						$site_module_info->domain_srl = -1;
+						$site_module_info->domain = Rhymix\Framework\URL::getCurrentDomain();
+						$site_module_info->is_default_domain = 'N';
+						$site_module_info->is_default_replaced = true;
+
+						// Reset context variables if the domain was replaced.
+						Context::set('site_module_info', $site_module_info);
+						Context::set('_default_url', null);
+						Context::set('request_uri', $current_url = Context::getRequestUri());
+						if ($query_string = http_build_query(Context::getCurrentRequest()->args))
+						{
+							$current_url .= '?' . $query_string;
+						}
+						Context::set('current_url', $current_url);
 				}
 			}
 		}
@@ -182,8 +195,11 @@ class ModuleHandler extends Handler
 			}
 		}
 
+		// Initialize module info.
+		$module_info = null;
+
 		// Get module info from document_srl.
-		if($this->document_srl)
+		if($this->document_srl && !preg_match('/Admin/', $this->act))
 		{
 			$module_info = $this->_checkDocumentSrl();
 			if ($module_info === false)
@@ -191,23 +207,21 @@ class ModuleHandler extends Handler
 				return false;
 			}
 		}
-		else
-		{
-			$module_info = null;
-		}
 
 		// Get module info from mid.
 		if(!$module_info && $this->mid)
 		{
 			$module_info = ModuleModel::getModuleInfoByMid($this->mid);
-			if($module_info && isset($module_info->domain_srl) && $module_info->domain_srl > -1)
+		}
+
+		// If the module does not belong to the current domain, throw a 404.
+		if($module_info && isset($module_info->domain_srl) && $module_info->domain_srl > -1)
+		{
+			if($module_info->domain_srl != $site_module_info->domain_srl)
 			{
-				if($module_info->domain_srl != $site_module_info->domain_srl)
-				{
-					$this->error = 'msg_module_is_not_exists';
-					$this->httpStatusCode = 404;
-					return true;
-				}
+				$this->error = 'msg_module_is_not_exists';
+				$this->httpStatusCode = 404;
+				return true;
 			}
 		}
 
@@ -781,6 +795,14 @@ class ModuleHandler extends Handler
 					$this->mid = $module_info->mid;
 					Context::set('mid', $this->mid);
 				}
+			}
+
+			// Redirect if a member action is requested with an unnecessary document_srl. (For backward compatibility)
+			if(preg_match('/^disp(Member|Communication)/', $this->act))
+			{
+				Context::setCacheControl(0);
+				header('Location: ' . getNotEncodedUrl('document_srl', null), true, 301);
+				return false;
 			}
 
 			// Remove module info if a different module has already been selected for the current request.

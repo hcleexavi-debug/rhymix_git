@@ -55,19 +55,16 @@ class DocumentModel extends Document
 			return;
 		}
 
-		static $checked = array();
-		static $module_extra_keys = array();
-
 		// check documents
 		$document_srls = array();
 		foreach($_document_list as $document_srl => $oDocument)
 		{
-			if(isset($checked[$document_srl]) || !($oDocument instanceof documentItem) || !$oDocument->isExists())
+			if(isset($GLOBALS['XE_EXTRA_CHK'][$document_srl]) || !($oDocument instanceof documentItem) || !$oDocument->isExists())
 			{
 				continue;
 			}
 
-			$checked[$document_srl] = true;
+			$GLOBALS['XE_EXTRA_CHK'][$document_srl] = true;
 			$document_srls[] = $document_srl;
 		}
 
@@ -102,16 +99,16 @@ class DocumentModel extends Document
 			if(!isset($GLOBALS['XE_EXTRA_VARS'][$document_srl]))
 			{
 				// get extra keys of the module
-				if(!isset($module_extra_keys[$module_srl]))
+				if(!isset($GLOBALS['XE_EXTRA_KEYS'][$module_srl]))
 				{
-					$module_extra_keys[$module_srl] = self::getExtraKeys($module_srl);
+					$GLOBALS['XE_EXTRA_KEYS'][$module_srl] = self::getExtraKeys($module_srl);
 				}
 
 				// set extra variables of the document
-				if($module_extra_keys[$module_srl])
+				if(!empty($GLOBALS['XE_EXTRA_KEYS'][$module_srl]))
 				{
 					$document_extra_vars = array();
-					foreach($module_extra_keys[$module_srl] as $idx => $key)
+					foreach($GLOBALS['XE_EXTRA_KEYS'][$module_srl] as $idx => $key)
 					{
 						$document_extra_vars[$idx] = clone($key);
 
@@ -242,6 +239,7 @@ class DocumentModel extends Document
 		$sort_check = self::_setSortIndex($obj, $load_extra_vars);
 		$obj->sort_index = $sort_check->sort_index;
 		$obj->isExtraVars = $sort_check->isExtraVars;
+		$obj->isExtraVarsSortAsNumber = $sort_check->isExtraVarsSortAsNumber;
 		$obj->except_notice = $except_notice;
 		$obj->columnList = $columnList;
 
@@ -675,6 +673,7 @@ class DocumentModel extends Document
 		$sort_check = self::_setSortIndex($opt);
 		$opt->sort_index = $sort_check->sort_index;
 		$opt->isExtraVars = $sort_check->isExtraVars;
+		$opt->isExtraVarsSortAsNumber = $sort_check->isExtraVarsSortAsNumber;
 
 		self::_setSearchOption($opt, $args, $query_id, $use_division);
 
@@ -1351,6 +1350,7 @@ class DocumentModel extends Document
 		$args = new stdClass;
 		$args->sort_index = $obj->sort_index ?? null;
 		$args->isExtraVars = false;
+		$args->isExtraVarsSortAsNumber = false;
 
 		// check it's default sort
 		$default_sort = array('list_order', 'regdate', 'last_update', 'update_order', 'readed_count', 'voted_count', 'blamed_count', 'comment_count', 'trackback_count', 'uploaded_count', 'title', 'category_srl');
@@ -1366,20 +1366,20 @@ class DocumentModel extends Document
 			return $args;
 		}
 
-		$eids = array();
-		foreach($extra_keys as $idx => $key)
+		foreach($extra_keys as $extra_key)
 		{
-			$eids[] = $key->eid;
+			if ($args->sort_index === $extra_key->eid)
+			{
+				$args->isExtraVars = true;
+				if ($extra_key->type === 'number')
+				{
+					$args->isExtraVarsSortAsNumber = true;
+				}
+				return $args;
+			}
 		}
 
-		// check it exists in extra keys of the module
-		if(!in_array($args->sort_index, $eids))
-		{
-			$args->sort_index = 'list_order';
-			return $args;
-		}
-
-		$args->isExtraVars = true;
+		$args->sort_index = 'list_order';
 		return $args;
 	}
 
@@ -1487,10 +1487,12 @@ class DocumentModel extends Document
 				case 'nick_name' :
 				case 'email_address' :
 				case 'homepage' :
-				case 'regdate' :
-				case 'last_update' :
 				case 'ipaddress' :
 					$args->{'s_' . $search_target} = str_replace(' ', '%', $search_keyword);
+					break;
+				case 'regdate' :
+				case 'last_update' :
+					$args->{'s_' . $search_target} = preg_replace('/[^\d]/', '', $search_keyword);
 					break;
 				case 'member_srl' :
 				case 'readed_count' :
@@ -1557,7 +1559,14 @@ class DocumentModel extends Document
 				{
 					$args->sort_eid = $args->sort_index;
 					$args->sort_lang = Context::getLangType();
-					$args->sort_index = 'extra_sort.value';
+					if ($searchOpt->isExtraVarsSortAsNumber ?? false)
+					{
+						$args->sort_index = 'extra_sort.sort_value';
+					}
+					else
+					{
+						$args->sort_index = 'extra_sort.value';
+					}
 				}
 				$query_id = 'document.getDocumentListWithExtraVars';
 			}

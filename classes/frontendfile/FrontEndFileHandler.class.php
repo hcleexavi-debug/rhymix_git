@@ -205,13 +205,13 @@ class FrontEndFileHandler extends Handler
 	 * Get file information
 	 *
 	 * @param string $fileName The file name
-	 * @param string $targetIe Target IE of file
+	 * @param string $unused Formerly targetIe
 	 * @param string $media Media of file
 	 * @param array $vars Variables for LESS and SCSS
 	 * @param bool $forceMinify Whether this file should be minified
 	 * @return stdClass The file information
 	 */
-	protected function getFileInfo($fileName, $targetIe = '', $media = 'all', $vars = array(), $isCommon = false)
+	protected function getFileInfo($fileName, $unused = '', $media = 'all', $vars = array(), $isCommon = false)
 	{
 		$pathInfo = pathinfo($fileName);
 
@@ -423,13 +423,17 @@ class FrontEndFileHandler extends Handler
 	 * Unload front end file
 	 *
 	 * @param string $fileName The file name to unload
-	 * @param string $targetIe Target IE of file to unload
+	 * @param string $unused Formerly targetIe
 	 * @param string $media Media of file to unload. Only use when file is css.
 	 * @return void
 	 */
-	public function unloadFile($fileName, $targetIe = '', $media = 'all')
+	public function unloadFile($fileName, $unused = '', $media = 'all')
 	{
-		$file = $this->getFileInfo($fileName, $targetIe, $media);
+		$file = $this->getFileInfo($fileName, $unused, $media);
+		if (!isset($file->key))
+		{
+			return;
+		}
 
 		if($file->fileExtension == 'css')
 		{
@@ -620,7 +624,8 @@ class FrontEndFileHandler extends Handler
 					{
 						$url .= '?t=' . filemtime($file->fileFullPath);
 					}
-					$result[] = array('file' => $url);
+					$attrs = empty($file->jstype) ? '' : (' type="' . $file->jstype . '"');
+					$result[] = array('file' => $url, 'attrs' => $attrs);
 				}
 				else
 				{
@@ -638,7 +643,7 @@ class FrontEndFileHandler extends Handler
 						Rhymix\Framework\Storage::write(\RX_BASEDIR . $concat_filename, $concat_content);
 					}
 					$concat_filename .= '?t=' . filemtime(\RX_BASEDIR . $concat_filename);
-					$result[] = array('file' => \RX_BASEURL . $concat_filename);
+					$result[] = array('file' => \RX_BASEURL . $concat_filename, 'attrs' => '');
 				}
 			}
 		}

@@ -151,13 +151,20 @@ class HTMLDisplayHandler
 						Context::loadFile(array($edited_layout_css, 'all', '', 100));
 					}
 				}
-				if(!$layout_path)
+				if (!$layout_path)
 				{
 					$layout_path = './common/tpl';
 				}
-				if(!$layout_file)
+				if (!$layout_file)
 				{
-					$layout_file = 'default_layout';
+					if ($layout_path === './common/tpl')
+					{
+						$layout_file = 'default_layout';
+					}
+					else
+					{
+						$layout_file = 'layout';
+					}
 				}
 
 				$oTemplate = new Rhymix\Framework\Template;
@@ -183,7 +190,7 @@ class HTMLDisplayHandler
 				$pathInfo = pathinfo($layout_file);
 				$onlyLayoutFile = $pathInfo['filename'];
 
-				$GLOBALS['__layout_compile_elapsed__'] = microtime(true) - $start;
+				Rhymix\Framework\Debug::addTime('layout', microtime(true) - $start);
 			}
 		}
 
@@ -297,7 +304,7 @@ class HTMLDisplayHandler
 			$output = preg_replace_callback('@<textarea[^>]*\sname="' . $keys . '".+</textarea>@isU', array(&$this, '_preserveTextAreaValue'), $output);
 		}
 
-		$GLOBALS['__trans_content_elapsed__'] = microtime(true) - $start;
+		Rhymix\Framework\Debug::addTime('trans_content', microtime(true) - $start);
 
 		// Remove unnecessary information
 		$output = preg_replace('/member\_\-([0-9]+)/s', 'member_0', $output);
@@ -757,12 +764,19 @@ class HTMLDisplayHandler
 			'plugins/cookie/js.cookie.min.js',
 			'plugins/blankshield/blankshield.min.js',
 			'plugins/uri/URI.min.js',
-			'x.js',
-			'common.js',
-			'js_app.js',
-			'xml_handler.js',
-			'xml_js_filter.js',
 		);
+
+		if (str_contains($_SERVER['HTTP_USER_AGENT'] ?? '', 'Trident/'))
+		{
+			$original_file_list[] = 'polyfills/formdata.min.js';
+			$original_file_list[] = 'polyfills/promise.min.js';
+		}
+
+		$original_file_list[] = 'x.js';
+		$original_file_list[] = 'common.js';
+		$original_file_list[] = 'js_app.js';
+		$original_file_list[] = 'xml_handler.js';
+		$original_file_list[] = 'xml_js_filter.js';
 
 		if(config('view.minify_scripts') === 'none')
 		{
