@@ -43,7 +43,7 @@
 	</header>
 	<!-- VISUAL | DEFAULT -->
 	<div class="visual main"|cond="$layout_info->LAYOUT_TYPE=='MAIN_PAGE'" class="visual sub"|cond="$layout_info->LAYOUT_TYPE=='SUB_PAGE'" cond="!$layout_info->VISUAL_IMAGE_1 && !$layout_info->VISUAL_IMAGE_2 && !$layout_info->VISUAL_IMAGE_3 && $layout_info->VISUAL_USE=='YES'">
-#46		<div class="list">
+		<div class="list">
 			<a href="{geturl('','module','admin','act','dispAdminConfigGeneral')}" class="item i1" cond="$layout_info->LAYOUT_TYPE=='MAIN_PAGE'">
 				<img src="visual.main.1.jpg" alt="" />
 				<p>Click, to change<br> the site title.</p>
@@ -66,7 +66,7 @@
 	</div>
 	<!-- VISUAL | USER DEFINE -->
 	<div class="visual main"|cond="$layout_info->LAYOUT_TYPE=='MAIN_PAGE'" class="visual sub"|cond="$layout_info->LAYOUT_TYPE=='SUB_PAGE'" cond="($layout_info->VISUAL_IMAGE_1 || $layout_info->VISUAL_IMAGE_2 || $layout_info->VISUAL_IMAGE_3) && $layout_info->VISUAL_USE=='YES'">
-#69		<div class="list">
+		<div class="list">
 			<a href="{$layout_info->VISUAL_LINK_1}" class="item i1" cond="$layout_info->VISUAL_IMAGE_1">
 				<img src="{$layout_info->VISUAL_IMAGE_1}" alt="" />
 				<p>{$layout_info->VISUAL_TEXT_1}</p>
@@ -84,96 +84,8 @@
 		<button type="button" class="next" title="Next"><i></i></button>
 	</div>
 	<!-- /VISUAL -->
-
-	
-<!-- layout.html 파일에 추가할 코드 -->
-<div class='test' cond="$layout_info->LAYOUT_TYPE=='MAIN_PAGE'">
-	#91
-    <?php
-    // 현재 로그인한 사용자 정보 가져오기
-    $logged_info = Context::get('logged_info');
-    $member_srl = $logged_info ? $logged_info->member_srl : 0;
-    
-    // 게시판 모듈의 모든 mid 목록 가져오기
-    $oModuleModel = getModel('module');
-    $args = new stdClass();
-    $args->module = 'board'; // 게시판 모듈만 조회
-    $output = executeQueryArray('module.getMidList', $args);
-//debugPrint($output);
-//echo "<pre>";
-//print_r($output);
-//echo "</pre>";
-
-
-    if($output->data) {
-        echo '<ul class="allowed-board-list">';
-        
-        foreach($output->data as $module_info) {
-            // 각 게시판의 상세 정보 가져오기
-            $board_info = $oModuleModel->getModuleInfoByMid($module_info->mid);
-            // 권한 체크 - 목록보기 권한 확인
-            if($board_info) {
-                // grant 객체를 통해 권한 확인
-                $grant = $oModuleModel->getGrant($board_info, $logged_info);             
-                // 목록보기 권한이 있는 경우만 표시
-                if($grant->access) {
-                    $browser_title = htmlspecialchars($board_info->browser_title ?: $board_info->mid);
-                    $description = htmlspecialchars($board_info->description ?: '설명 없음');
-                    $url = getUrl('', 'mid', $board_info->mid);
-                    
-                    echo '<li>';
-                    echo '<strong><a href="'.$url.'">'.$browser_title.'</a></strong>';
-                    echo '<p class="board-desc">'.$description.'</p>';
-                    echo '</li>';
-                }
-            }
-        }
-        
-        echo '</ul>';
-    } else {
-        echo '<p>접근 가능한 게시판이 없습니다.</p>';
-    }
-    ?>
-    
-    <style>
-    .test .allowed-board-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .test .allowed-board-list li {
-        padding: 10px;
-        margin-bottom: 10px;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        background-color: #f9f9f9;
-    }
-    
-    .test .allowed-board-list li:hover {
-        background-color: #f0f0f0;
-    }
-    
-    .test .allowed-board-list strong a {
-        color: #333;
-        text-decoration: none;
-        font-size: 16px;
-    }
-    
-    .test .allowed-board-list strong a:hover {
-        color: #0066cc;
-    }
-    
-    .test .board-desc {
-        margin: 5px 0 0 0;
-        color: #666;
-        font-size: 14px;
-    }
-    </style>
-</div>
-
 	<div class="body main"|cond="$layout_info->LAYOUT_TYPE=='MAIN_PAGE'" class="body sub"|cond="$layout_info->LAYOUT_TYPE=='SUB_PAGE'">
-#175		<!-- LNB -->
+		<!-- LNB -->
 		<nav class="lnb" cond="$layout_info->LAYOUT_TYPE == 'SUB_PAGE'">
 			<h1 loop="$GNB->list=>$key1,$val1" cond="$val1['selected']">
 				<a href="{$val1['href']}" class="{$val1['class']}"|cond="!empty($val1['class'])" target="_blank"|cond="$val1['open_window']=='Y'">{$val1['link']}</a>
@@ -192,6 +104,7 @@
 		<!-- /LNB -->
 		<!-- CONTENT -->
 		<div class="content" id="content">
+			{$board_list_html}
 			{$content|noescape}
 		</div>
 		<!-- /CONTENT -->

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon version="0.2">
+    <title xml:lang="ko">게시판 목록 표시</title>
+    <description xml:lang="ko">메인페이지에 로그인한 사용자가 접근 가능한 게시판 목록과 카테고리를 표시합니다.</description>
+    <version>1.0</version>
+    <date>2025-11-20</date>
+    <author email_address="admin@yoursite.com" link="https://yoursite.com">
+        <name xml:lang="ko">hclee, assistance from claude AI</name>
+    </author>
+</addon>
+
+
