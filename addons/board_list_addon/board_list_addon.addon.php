@@ -1,15 +1,15 @@
 <?php
 if(!defined("__XE__")) exit();
 
-// 메인페이지의 본문 위에만 표시
-if($called_position != 'before_display_content') return;
+// 레이아웃 컴파일 전에 실행되는 시점 사용
+if($called_position != 'before_module_proc') return;
 
 // 현재 mid 확인 - 메인페이지는 'index'
 $current_mid = Context::get('mid');
 
 // 메인페이지가 아니면 종료
 if($current_mid != 'index') return;
-echo "#12<br>";
+
 // 로그인 정보 가져오기
 $logged_info = Context::get('logged_info');
 
@@ -22,7 +22,7 @@ $args->module = 'board';
 $output = executeQueryArray('module.getMidList', $args);
 
 $board_list_html = '';
-echo "#25<br>";
+
 if($output->data && count($output->data) > 0) {
     $board_list_html .= '<div class="board-list-addon">';
     $board_list_html .= '<h2 class="board-list-title">게시판 목록</h2>';
@@ -214,15 +214,6 @@ if($output->data && count($output->data) > 0) {
     }
     </style>
     ';
-} else {
-    // 접근 가능한 게시판이 없는 경우
-    if($logged_info) {
-        $board_list_html .= '<div class="board-list-addon">';
-        $board_list_html .= '<p class="no-board-message">접근 가능한 게시판이 없습니다.</p>';
-        $board_list_html .= '</div>';
-    }
 }
 
-echo "<pre>{$board_list_html}</pre>";
-// Context에 HTML 저장
 Context::set('board_list_html', $board_list_html);
