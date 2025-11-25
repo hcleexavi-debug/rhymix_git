@@ -15,6 +15,9 @@
 	font-size: 12px;
 	font-family: 돋움, Dotum, Tahoma, Geneva, sans-serif;
 }
+.board h2 {
+	color:red;
+}
 .board select {
 	margin: 0;
 }

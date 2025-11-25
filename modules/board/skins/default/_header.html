@@ -28,11 +28,13 @@
 }
 
 <div class="board">
+	<h2>
 	<!--@if($m && $module_info->mobile_header_text)-->
 		{$module_info->mobile_header_text}
 	<!--@else-->
 		{$module_info->header_text}
 	<!--@end-->
+	</h2>
 	<div class="board_header" cond="!empty($module_info->title_image) || $grant->manager">
 		<h2 cond="$module_info->title_image"><a href="{getUrl('','mid',$mid)}"><img src="{$module_info->title_image}" alt="{$module_info->title_alt}" /></a></h2>
 		<a cond="$grant->manager" class="setup" href="{getUrl('act','dispBoardAdminBoardInfo')}" title="{$lang->cmd_setup}">{$lang->cmd_setup}</a>
