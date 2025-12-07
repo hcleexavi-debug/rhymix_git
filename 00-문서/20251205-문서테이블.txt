@@ -1,0 +1,1 @@
+SELECT * FROM rhymix_2025.rx_documents order by document_srl desc ; -- 68 where content like '%자유로운%' ##모바일 메인

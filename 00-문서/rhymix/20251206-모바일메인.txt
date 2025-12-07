@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="./layouts/xedition/css/welcome.css" /> 
+<div class="welcomeXE"> 	
+    <section class="intro"> 		
+        <span class="noti">HELLO, WORLD!</span> 		
+        <h1 class="tit">WELCOME TO RHYMIX</h1> 		
+        <P class="cont">Rhymix는 자유로운 웹 콘텐츠 발행을 돕는 CMS입니다.<br />
+            간편한 설치와 다양한 추가 프로그램을 활용하여<br /> 자신만의 웹페이지를 쉽고 빠르게 만들 수 있습니다.</P> 		
+        <a href="/index.php?module=member" target="_blank" class="btn_start">시작하기</a> 	
+    </section> 
+</div> 
+
+<link rel="stylesheet" href="./layouts/xedition/css/welcome.css" /> 
+<div class="welcomeXE"> 	
+    <section class="intro"> 		
+        <span class="noti">2026년부터 사용할 인터템 게시판 작업 중입니다</span> 		
+        <h1 class="tit">이전 게시판은 아래 버튼을 클릭해 주세요.</h1> 		
+        <p class="cont">Rhymix는 자유로운 웹 콘텐츠 발행을 돕는 CMS입니다.<br />
+            간편한 설치와 다양한 추가 프로그램을 활용하여<br /> 자신만의 웹페이지를 쉽고 빠르게 만들 수 있습니다.</p>
+        <p><a class="button" href="https://www.inu4u.com/adm2/" target="_blank">이전 게시판 바로가기</a></p> 		
+        <a href="/index.php?module=member" target="_blank" class="btn_start">시작하기</a> 	
+    </section> 
+</div> 
+
+
+
+
+<p>2026년부터 사용할 인터템 게시판 작업 중입니다.</p>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+<p>이전 게시판은 아래 버튼을 클릭해 주세요.</p>
+
+<p>&nbsp;</p>
+
+<p><a class="button" href="https://www.inu4u.com/adm2/" target="_blank">이전 게시판 바로가기</a></p>
+
+<p>&nbsp;</p>

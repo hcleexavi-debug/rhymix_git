@@ -1,0 +1,10 @@
+아이피에 따라서 처리
+
+데스크탑
+    widgets/login_info/login_info.class.php
+    
+모바일
+    modules/member/member.view.php
+    files/override/modules/member/member.view.php - 동작 안함
+
+    
