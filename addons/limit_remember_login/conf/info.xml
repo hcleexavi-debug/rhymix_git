@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon version="0.2">
+    <title xml:lang="ko">로그인 유지 IP 제한</title>
+    <description xml:lang="ko">특정 IP에서만 로그인 유지 기능 사용</description>
+    <version>1.0</version>
+    <date>2024-12-07</date>
+    <author>
+        <name>hclee</name>
+    </author>
+</addon>
+

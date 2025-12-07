@@ -1,4 +1,5 @@
 <?php
+// error_log('board_list.addon.php called : ' . __LINE__);
 if(!defined("__XE__")) exit();
 
 // 레이아웃 컴파일 전에 실행되는 시점 사용
@@ -11,7 +12,7 @@ $current_mid = Context::get('mid');
 if($current_mid != 'index') return;
 
 // CSS 파일 추가 (최신 방식)
-Context::loadFile(array('./addons/board_list/board_list_addon.css', '', '', 100), true);
+Context::loadFile(array('./addons/board_list/board_list.addon.css', '', '', 100), true);
 
 // 로그인 정보 가져오기
 $logged_info = Context::get('logged_info');
