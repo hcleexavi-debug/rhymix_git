@@ -21,8 +21,8 @@
 				<div class="control-group captcha" cond="isset($captcha) && $captcha && $captcha->isTargetAction('login')">
 					{$captcha}
 				</div>
-				<div class="control-group">
-					<label for="keepid_opt">
+				<div class="control-group login-keep-button">
+					<label for="keepid_opt" class="keep">
 						<input type="checkbox" name="keep_signed" id="keepid_opt" value="Y" />
 						{$lang->keep_signed}
 					</label>

@@ -1,7 +1,7 @@
 <load target="default.login.css" />
 <load target="login.xml" />
 <load target="default.login.js" />
-<form id="fo_login_widget" action="{getUrl('','act','procMemberLogin')}" method="post" ruleset="@login" class="account">
+<form id="fo_login_widget" action="{getUrl('','act','procMemberLogin')}" method="post" ruleset="@login" class="account" >
 	<a href="#acField">{$lang->cmd_login}</a>
 	<fieldset id="acField">
 		<h2>{$lang->cmd_login}</h2>
@@ -17,12 +17,14 @@
 			<label for="user_id" cond="$member_config->identifier == 'email_address'">{$lang->email_address}</label>
 			<input name="user_id" id="user_id" type="email" required cond="$member_config->identifier == 'email_address'" />
 			<label for="user_pw">{$lang->password}</label>
-			<input name="password" id="user_pw" type="password" required />
-			<p class="keep">
-				<input type="checkbox" name="keep_signed" id="keep_signed" value="Y" />
-				<label for="keep_signed">{$lang->keep_signed}</label>
-			</p>
-			<p class="warning">{$lang->about_keep_warning}</p>
+			<input name="password" id="user_pw" type="password" required {$is_allowed_ip ? '' : 'autocomplete="new-password"'}/>
+			<div class="login-keep-button"><!-- 2025-12-05, hclee, login_info.class.php 또는 관련 파일 내부 -->
+				<p class="keep">
+					<input type="checkbox" name="keep_signed" id="keep_signed" value="Y" />
+					<label for="keep_signed">{$lang->keep_signed}</label>
+				</p>
+				<p class="warning">{$lang->about_keep_warning}</p>
+			</div>
 		</div>
 		<input type="submit" value="{$lang->cmd_login}" />
 		<ul class="help">

@@ -282,3 +282,6 @@
 .xm .agreement>.confirm{padding:10px 0 0 0;margin:10px 0 0 0;border-top:1px dotted #ccc}
 @media all and (max-width:480px){.xm .signin{margin:0;width:100%}}
 @media all and (min-width:768px){.xm .dl-horizontal>dt{margin-bottom:10px}}
+
+/* 2025-12-07, hclee, 로그인 유지 옵션 숨김 */
+.xm .login-keep-button {min-height: 25px;}

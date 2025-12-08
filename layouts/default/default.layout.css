@@ -28,7 +28,7 @@ body{margin:0}
 .header>h1>a{font-size:32px;text-decoration:none;color:#333}
 
 /* Footer */
-.footer{padding:25px 0 80px 0;background:#f8f8f8;border-top:1px solid #f4f4f4;color:#666}
+.footer{clear:both;padding:25px 0 80px 0;background:#f8f8f8;border-top:1px solid #f4f4f4;color:#666}
 .footer p{font-size:12px}
 .footer a{text-decoration:none;color:#666}
 .footer a:hover,
@@ -38,7 +38,7 @@ body{margin:0}
 .account{margin-right:15px !important}
 
 /* Search */
-.header .search{display:inline-block;*display:inline;zoom:1;vertical-align:top;margin:0}
+.header .search{display:none;*display:inline;zoom:1;vertical-align:top;margin:0}
 .header .search>input{font-size:12px;vertical-align:top;border-radius:2px}
 .header .search>input[type="text"]{background:#e5e6e8;border:1px solid #dedede;height:21px;line-height:21px;padding:0 4px;margin:0 -6px 0 0;width:126px}
 .header .search>input[type="submit"]{background:#484d51;border:1px solid #272b30;color:#fff;height:23px;line-height:23px;padding:0 15px;margin:0;cursor:pointer;box-shadow:0 1px 0 #6d7174 inset}
