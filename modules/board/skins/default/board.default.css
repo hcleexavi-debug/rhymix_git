@@ -1151,3 +1151,8 @@
 .exForm .text {
 	width: 100%;
 }
+
+/* 2025-12-10, hclee, */
+.board_list td:not(.title) {
+    text-align: center;
+}
