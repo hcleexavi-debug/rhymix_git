@@ -4,6 +4,7 @@
 if(!defined("__XE__")) exit();
 // 로그인 유지를 허용할 IP 목록
 $allowed_ips = array(
+    '127.0.0.1',
     '192.168.219.1',
     '59.7.27.131',
     '220.127.198.145',
@@ -11,6 +12,7 @@ $allowed_ips = array(
 );
 // 현재 접속자의 IP
 $user_ip = RX_CLIENT_IP;
+// error_log("limit_remember_login.addon.php called : [" . $user_ip . "]" . __LINE__);
 // 로그인 처리 시 (실제 로그인 실행 전)
 if ($called_position == 'before_module_proc') {
     $act = Context::get('act');
