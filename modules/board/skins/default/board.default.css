@@ -1146,3 +1146,13 @@
 	color: #333;
 	background-color: #e6e6e6;
 }
+
+/* 2025-12-08, hclee, URL너비 100%  */
+.exForm .text {
+	width: 100%;
+}
+
+/* 2025-12-10, hclee, */
+.board_list td:not(.title) {
+    text-align: center;
+}
